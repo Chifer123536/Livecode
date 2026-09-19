@@ -1,0 +1,160 @@
+:root {
+	--bg: #0f1115;
+	--panel: #161922;
+	--line: #262b38;
+	--text: #e6e8ee;
+	--muted: #9aa3b2;
+	--accent: #6b8afd;
+	--good: #3fb950;
+	--bad: #f85149;
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font: 15px/1.6 ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+
+.shell {
+	display: grid;
+	grid-template-columns: 230px 1fr;
+	min-height: 100vh;
+}
+
+aside {
+	border-right: 1px solid var(--line);
+	padding: 20px 14px;
+	background: var(--panel);
+}
+
+.brand {
+	display: block;
+	font-weight: 700;
+	font-size: 18px;
+	margin-bottom: 18px;
+	color: var(--accent);
+	text-decoration: none;
+}
+
+aside nav {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+aside nav a {
+	color: var(--muted);
+	text-decoration: none;
+	padding: 6px 8px;
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+aside nav a:hover {
+	color: var(--text);
+	background: #1e2330;
+}
+
+main {
+	padding: 28px 32px;
+	max-width: 900px;
+}
+
+h1 {
+	font-size: 22px;
+	margin: 0 0 4px;
+}
+
+h2 {
+	font-size: 16px;
+	margin: 28px 0 8px;
+}
+
+.lead {
+	color: var(--muted);
+	margin: 0 0 22px;
+}
+
+.card {
+	border: 1px solid var(--line);
+	background: var(--panel);
+	border-radius: 6px;
+	padding: 14px 16px;
+	margin-bottom: 12px;
+}
+
+.note {
+	border-left: 3px solid var(--accent);
+	padding: 8px 12px;
+	background: #171c2a;
+	color: var(--muted);
+	margin: 14px 0;
+	font-size: 13px;
+}
+
+button,
+input,
+select {
+	font: inherit;
+	color: inherit;
+	background: #1b2130;
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	padding: 6px 10px;
+}
+
+button {
+	cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+	border-color: var(--accent);
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+a {
+	color: var(--accent);
+}
+
+ul {
+	padding-left: 18px;
+}
+
+code {
+	background: #1b2130;
+	padding: 1px 5px;
+	border-radius: 3px;
+	font-size: 13px;
+}
+
+.skeleton {
+	height: 14px;
+	background: linear-gradient(90deg, #1b2130, #232a3b, #1b2130);
+	border-radius: 4px;
+	margin: 8px 0;
+	animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+	50% {
+		opacity: 0.45;
+	}
+}
+
+.error {
+	color: var(--bad);
+}
+
+.ok {
+	color: var(--good);
+}
