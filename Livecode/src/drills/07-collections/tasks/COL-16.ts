@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Пары по позициям. Останавливается на КОРОТКОМ.
  *
+ * Примеры:
  *   [...zip([1, 2, 3], 'ab')] → [[1, 'a'], [2, 'b']]
  */
 export function* zip<A, B>(a: Iterable<A>, b: Iterable<B>): Generator<[A, B]> {

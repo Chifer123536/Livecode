@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Является ли число квадратом целого. Отрицательные — нет.
  *
+ * Примеры:
  *   isPerfectSquare(16) → true
  *   isPerfectSquare(15) → false
  *   isPerfectSquare(0)  → true

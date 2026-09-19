@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Оставить чётные числа. Исходный массив не трогать.
  *
+ * Примеры:
  *   onlyEven([1, 2, 3, 4]) → [2, 4]
  */
 export const onlyEven = (nums: number[]): number[] => todo()

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * НА МЕСТЕ, возвращает новую длину. Хвост за ней не важен.
  *
+ * Примеры:
  *   nums = [1, 1, 2, 3, 3] → вернуть 3, начало массива [1, 2, 3]
  */
 export const removeDuplicates = (sorted: number[]): number => todo()

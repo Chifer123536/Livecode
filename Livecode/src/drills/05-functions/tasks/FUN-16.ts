@@ -7,6 +7,8 @@ import { todo } from '../../../shared/kit'
  * через bind и через стрелку-обёртку.
  *
  *   const read = detach(obj, 'getName')
+ *
+ * Примеры:
  *   read() → значение obj.name, даже если вызвать read отдельно
  */
 export const detach = <T extends object, K extends keyof T>(

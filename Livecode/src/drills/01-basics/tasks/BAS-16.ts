@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Год високосный, если делится на 4, но НЕ на 100 — либо делится на 400.
  *
+ * Примеры:
  *   isLeapYear(2024) → true
  *   isLeapYear(1900) → false
  *   isLeapYear(2000) → true

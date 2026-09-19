@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Применить асинхронную функцию к аккумулятору по очереди.
  * Это асинхронный reduce: каждый шаг ждёт предыдущего.
  *
+ * Примеры:
  *   reduceAsync([1,2,3], async (acc, n) => acc + n, 0) → 6
  */
 export const reduceAsync = <T, A>(

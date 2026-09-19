@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Пусто: null, undefined, '', строка из пробелов, пустой массив, объект без ключей.
  * НЕ пусто: 0, false, new Date().
  *
+ * Примеры:
  *   isEmpty('   ') → true
  *   isEmpty(0)     → false
  */

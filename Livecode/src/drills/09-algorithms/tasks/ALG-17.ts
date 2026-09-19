@@ -6,6 +6,7 @@ import { todo } from '../../../shared/kit'
  * Через Map это O(n) памяти, алгоритм Бойера — Мура делает то же за O(1):
  * держим кандидата и счётчик, совпало — плюс, нет — минус, ноль — меняем кандидата.
  *
+ * Примеры:
  *   majorityElement([2, 2, 1, 2, 3]) → 2
  */
 export const majorityElement = (nums: number[]): number => todo()

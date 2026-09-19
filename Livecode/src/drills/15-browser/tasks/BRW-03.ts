@@ -5,6 +5,8 @@ import { todo } from '../../../shared/kit'
  * Старый добрый хэш-роутинг: путь, параметры по шаблону и query.
  *
  *   parseHashRoute('#/users/5?tab=info', '/users/:id')
+ *
+ * Примеры:
  *     → { path: '/users/5', params: { id: '5' }, query: { tab: 'info' } }
  *   шаблон не подошёл → params: {}
  */

@@ -6,6 +6,7 @@ import type { Equal, Expect } from '../../../shared/types'
  * isString — предикат типа: сигнатура `value is string`.
  * onlyStrings использует его так, чтобы результат имел тип string[] БЕЗ приведения.
  *
+ * Примеры:
  *   onlyStrings([1, 'a', null, 'b']) → ['a', 'b'] типа string[]
  */
 export const isString = (value: unknown): value is string => todo()

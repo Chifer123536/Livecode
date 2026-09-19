@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Максимальная сумма k подряд идущих. Пересчитывать сумму заново — O(n·k),
  * правильно — вычесть ушедший элемент и прибавить пришедший, O(n).
  *
+ * Примеры:
  *   maxWindowSum([1, 5, 2, 8, 1], 2) → 10
  */
 export const maxWindowSum = (nums: number[], k: number): number => todo()

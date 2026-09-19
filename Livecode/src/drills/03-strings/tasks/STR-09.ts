@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Видны только четыре последние цифры, группировка по четыре.
  *
+ * Примеры:
  *   maskCard('1234567812345678') → '**** **** **** 5678'
  */
 export const maskCard = (digits: string): string => todo()

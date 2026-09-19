@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * По одному элементу на группу — с максимальным значением поля.
  * При равенстве побеждает первый встреченный.
  *
+ * Примеры:
  *   topByGroup(items, 'category', 'rating') → [{ лучший телефон }, { лучший ноутбук }]
  */
 export const topByGroup = <T extends object>(items: T[], groupKey: keyof T, valueKey: keyof T): T[] => todo()

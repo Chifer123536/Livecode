@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Простое ли число. Проверять делители до квадратного корня, а не до n.
  *
+ * Примеры:
  *   isPrime(7) → true
  *   isPrime(9) → false
  *   isPrime(1) → false

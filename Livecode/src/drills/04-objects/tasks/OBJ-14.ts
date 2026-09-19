@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Переименовать по карте соответствий. Ключи, которых нет в карте, остаются как есть.
  *
+ * Примеры:
  *   renameKeys({ user_name: 'Аня' }, { user_name: 'userName' }) → { userName: 'Аня' }
  */
 export const renameKeys = <V>(obj: Record<string, V>, map: Record<string, string>): Record<string, V> => todo()

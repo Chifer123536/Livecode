@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Урезать объекты списка до набора полей — то, что уходит в таблицу или в CSV.
  *
+ * Примеры:
  *   selectFields(items, ['id', 'title']) → [{ id: 1, title: '...' }]
  */
 export const selectFields = <T extends object, K extends keyof T>(items: T[], keys: K[]): Array<Pick<T, K>> =>

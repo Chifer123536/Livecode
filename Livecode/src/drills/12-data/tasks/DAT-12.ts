@@ -5,6 +5,8 @@ import { todo } from '../../../shared/kit'
  * Список в форму, в которой его держат в сторе: справочник плюс порядок.
  *
  *   normalize([{ id: 2, ... }, { id: 5, ... }])
+ *
+ * Примеры:
  *     → { byId: { 2: {...}, 5: {...} }, allIds: [2, 5] }
  */
 export type Normalized<T> = { byId: Record<string, T>; allIds: number[] }

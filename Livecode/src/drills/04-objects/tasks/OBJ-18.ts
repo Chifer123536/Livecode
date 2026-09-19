@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Проверить наличие вложенного пути. Значение undefined по существующему ключу
  * всё равно считается наличием пути.
  *
+ * Примеры:
  *   hasPath({ a: { b: undefined } }, 'a.b') → true
  *   hasPath({ a: {} }, 'a.b')               → false
  */

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Гласные латиницы и кириллицы, регистр не важен.
  *
+ * Примеры:
  *   countVowels('Привет') → 2
  *   countVowels('HELLO')  → 2
  */

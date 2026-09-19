@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Разминка на форму: базовый случай + шаг.
  *
+ * Примеры:
  *   factorial(5) → 120
  *   factorial(0) → 1
  */

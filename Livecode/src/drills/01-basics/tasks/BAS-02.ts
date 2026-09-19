@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Проверить, чётное ли число. Отрицательные тоже должны работать.
  *
+ * Примеры:
  *   isEven(4)  → true
  *   isEven(-3) → false
  *   isEven(0)  → true

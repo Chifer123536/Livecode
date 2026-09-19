@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Сдвинуть вправо на k. Новый массив, k может быть больше длины.
  *
+ * Примеры:
  *   rotate([1, 2, 3, 4, 5], 2) → [4, 5, 1, 2, 3]
  */
 export const rotate = <T>(items: T[], k: number): T[] => todo()

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Игнорировать регистр и всё, кроме букв и цифр.
  *
+ * Примеры:
  *   isPalindrome('А роза упала на лапу Азора') → true
  *   isPalindrome('привет')                     → false
  */

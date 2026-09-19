@@ -2,6 +2,8 @@ import { todo } from '../../../shared/kit'
 
 // #region QZ-11 | await в цикле | ★★★
 /**
+ * Что напечатает код ниже и в каком порядке? Верни массив строк — по одной на каждый вывод.
+ *
  *   async function run() {
  *     for (const n of [1, 2]) {
  *       await null

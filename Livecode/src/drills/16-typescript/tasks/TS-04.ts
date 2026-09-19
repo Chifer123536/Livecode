@@ -5,6 +5,7 @@ import type { Equal, Expect } from '../../../shared/types'
 /**
  * Выкинуть ключи. Тип результата — Omit<T, K>.
  *
+ * Примеры:
  *   omit({ a: 1, b: 'x' }, ['b']) → { a: number }
  */
 export const omit = <T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> => todo()

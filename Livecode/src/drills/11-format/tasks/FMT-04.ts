@@ -3,6 +3,7 @@ import type { Forms } from './FMT-03'
 
 // #region FMT-04 | Число со словом | ★☆☆
 /**
+ * Примеры:
  *   pluralize(5, FORMS) → '5 товаров'
  *   pluralize(1, FORMS) → '1 товар'
  */

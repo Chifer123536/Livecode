@@ -2,6 +2,7 @@ import { todo } from '../../../shared/kit'
 
 // #region OBJ-22 | Сумма значений | ★☆☆
 /**
+ * Примеры:
  *   sumValues({ a: 1, b: 2 }) → 3
  *   sumValues({})             → 0
  */

@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Подставить значения вместо {{ключ}}. Пробелы внутри скобок допустимы.
  * Отсутствующий ключ заменяется пустой строкой.
  *
+ * Примеры:
  *   template('Привет, {{ name }}!', { name: 'Аня' }) → 'Привет, Аня!'
  */
 export const template = (text: string, values: Record<string, string | number>): string => todo()

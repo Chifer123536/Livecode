@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Превратить список в { byId, allIds } — стандартная форма хранения данных в Redux.
  * Зачем: доступ по id за O(1) и отсутствие дублей одного объекта в разных местах.
  *
+ * Примеры:
  *   normalize([{ id: 'a' }, { id: 'b' }]) → { byId: { a: {...}, b: {...} }, allIds: ['a', 'b'] }
  */
 export type Normalized<T> = { byId: Record<string, T>; allIds: string[] }

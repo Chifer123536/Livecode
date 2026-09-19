@@ -6,6 +6,8 @@ import { todo } from '../../../shared/kit'
  * Значения не трогать.
  *
  *   camelizeKeys({ user_name: 'Аня', address_info: { city_name: 'Тверь' } })
+ *
+ * Примеры:
  *     → { userName: 'Аня', addressInfo: { cityName: 'Тверь' } }
  *
  * Практика: бэкенд отдаёт snake_case, фронтенд живёт в camelCase.

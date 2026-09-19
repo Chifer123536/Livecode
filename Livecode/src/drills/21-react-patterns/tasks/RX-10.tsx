@@ -5,6 +5,8 @@ import type { ComponentPropsWithoutRef, ComponentType, ElementType, ReactNode, R
 /**
  * Модалка, которая рендерится в document.body, а не в месте вызова —
  * иначе overflow: hidden у родителя обрежет её.
+ *
+ * Примеры:
  *  - open: false → не рендерить ничего;
  *  - role="dialog", aria-modal="true", заголовок из title;
  *  - Escape и клик по фону (data-testid="overlay") вызывают onClose;

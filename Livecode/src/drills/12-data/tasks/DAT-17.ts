@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Привести ответ бэкенда к своим именам. Поля, которых нет в карте, выбрасываются.
  *
+ * Примеры:
  *   renameFields([{ user_name: 'Ян', age: 30 }], { user_name: 'name' }) → [{ name: 'Ян' }]
  */
 export const renameFields = (

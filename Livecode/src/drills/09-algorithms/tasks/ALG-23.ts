@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Ключ группы — отсортированные буквы слова. Порядок групп — по первому появлению.
  *
+ * Примеры:
  *   groupAnagrams(['листок', 'слиток', 'кот']) → [['листок', 'слиток'], ['кот']]
  */
 export const groupAnagrams = (words: string[]): string[][] => todo()

@@ -6,6 +6,8 @@ import { todo } from '../../../shared/kit'
  * Даты и прочие не-простые объекты не разбирать.
  *
  *   camelizeKeys({ user_name: 'Ян', items: [{ created_at: 1 }] })
+ *
+ * Примеры:
  *     → { userName: 'Ян', items: [{ createdAt: 1 }] }
  */
 export const camelizeKeys = (value: unknown): unknown => todo()

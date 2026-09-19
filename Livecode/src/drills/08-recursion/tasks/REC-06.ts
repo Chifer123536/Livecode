@@ -5,6 +5,7 @@ import type { Nested } from './_pack'
 /**
  * Свой flat: depth по умолчанию — до конца.
  *
+ * Примеры:
  *   flattenDeep([1, [2, [3, [4]]]])    → [1, 2, 3, 4]
  *   flattenDeep([1, [2, [3, [4]]]], 1) → [1, 2, [3, [4]]]
  */

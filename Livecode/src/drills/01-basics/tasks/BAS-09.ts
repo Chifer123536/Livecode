@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * n! = 1 * 2 * ... * n. Ноль факториал равен единице.
  *
+ * Примеры:
  *   factorial(5) → 120
  *   factorial(0) → 1
  */

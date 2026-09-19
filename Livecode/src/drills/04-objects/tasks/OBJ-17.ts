@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Повторяющийся ключ собирается в массив. Ведущий '?' допустим.
  *
+ * Примеры:
  *   parseQuery('?a=1&b=x')    → { a: '1', b: 'x' }
  *   parseQuery('tag=a&tag=b') → { tag: ['a', 'b'] }
  */

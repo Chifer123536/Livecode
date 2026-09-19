@@ -4,6 +4,8 @@ import type { ComponentPropsWithoutRef, ComponentType, ElementType, ReactNode, R
 // #region RX-15 | Состояние на два режима | ★★★
 /**
  * Хук, из которого растёт RX-05: работает и как управляемое, и как неуправляемое состояние.
+ *
+ * Примеры:
  *  - передали value → возвращать его, а setState только звать onChange;
  *  - не передали → держать состояние внутри и всё равно звать onChange.
  */

@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * То же, но массив уже отсортирован — тогда хэш не нужен.
  * Два указателя с краёв: сумма больше цели — двигаем правый, меньше — левый. O(1) памяти.
  *
+ * Примеры:
  *   hasPairWithSum([1, 3, 5, 9], 8) → true
  */
 export const hasPairWithSum = (sorted: number[], target: number): boolean => todo()

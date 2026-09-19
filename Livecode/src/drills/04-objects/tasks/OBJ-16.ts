@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Пропустить undefined и null. Значения кодировать через encodeURIComponent.
  * Массив превращается в повторяющийся ключ.
  *
+ * Примеры:
  *   toQuery({ a: 1, b: 'да', c: null }) → 'a=1&b=%D0%B4%D0%B0'
  *   toQuery({ tag: ['a', 'b'] })        → 'tag=a&tag=b'
  */

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Сумма цифр целого числа. Знак игнорировать.
  *
+ * Примеры:
  *   sumDigits(1234) → 10
  *   sumDigits(-45)  → 9
  *   sumDigits(0)    → 0

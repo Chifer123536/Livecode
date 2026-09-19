@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Любая граница может отсутствовать.
  *
+ * Примеры:
  *   formatRange(100, 500)  → 'от 100 до 500 ₽'
  *   formatRange(100, null) → 'от 100 ₽'
  *   formatRange(null, 500) → 'до 500 ₽'

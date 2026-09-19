@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Без перекрытий.
  *
+ * Примеры:
  *   countSubstring('abababa', 'aba') → 2
  *   countSubstring('aaa', 'a')       → 3
  *   countSubstring('abc', '')        → 0

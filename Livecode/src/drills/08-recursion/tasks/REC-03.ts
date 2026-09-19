@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Рекурсивно, без reverse().
  *
+ * Примеры:
  *   reverseString('abc') → 'cba'
  */
 export const reverseString = (text: string): string => todo()

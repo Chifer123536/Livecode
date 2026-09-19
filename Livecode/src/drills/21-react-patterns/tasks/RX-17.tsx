@@ -5,6 +5,8 @@ import type { ComponentPropsWithoutRef, ComponentType, ElementType, ReactNode, R
 /**
  * Доступная связка, которую просят на каждом втором собесе:
  *  - label связан с input через id (брать из useId, а не придумывать руками);
+ *
+ * Примеры:
  *  - есть error → <p role="alert"> с текстом, input получает aria-invalid="true"
  *    и aria-describedby с id этого сообщения;
  *  - нет ошибки → ни alert, ни aria-invalid.

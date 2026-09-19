@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Проверить, что скобки ( ) [ ] { } закрыты в правильном порядке.
  * Остальные символы игнорировать.
  *
+ * Примеры:
  *   isBalanced('([]{})') → true
  *   isBalanced('(]')     → false
  *   isBalanced('(()')    → false

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Резолвится значением через ms миллисекунд.
  *
+ * Примеры:
  *   await delayValue('ок', 50) → 'ок'
  */
 export const delayValue = <T>(value: T, ms: number): Promise<T> => todo()

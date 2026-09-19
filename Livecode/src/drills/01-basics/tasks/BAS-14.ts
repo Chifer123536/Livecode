@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Развернуть цифры числа. Знак сохранить, ведущие нули отбросить.
  *
+ * Примеры:
  *   reverseNumber(12345) → 54321
  *   reverseNumber(1200)  → 21
  *   reverseNumber(-123)  → -321

@@ -5,6 +5,8 @@ import { todo } from '../../../shared/kit'
  * Собрать строку, пропуская пустые части.
  *
  *   formatAddress({ city: 'Москва', street: 'Ленина', house: '5', flat: '10' })
+ *
+ * Примеры:
  *     → 'Москва, ул. Ленина, д. 5, кв. 10'
  *   formatAddress({ city: 'Тверь', street: '', house: '', flat: '' }) → 'Тверь'
  */

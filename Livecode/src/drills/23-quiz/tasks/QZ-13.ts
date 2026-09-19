@@ -2,6 +2,8 @@ import { todo } from '../../../shared/kit'
 
 // #region QZ-13 | Возврат промиса из then | ★★★
 /**
+ * Что напечатает код ниже и в каком порядке? Верни массив строк — по одной на каждый вывод.
+ *
  *   Promise.resolve()
  *     .then(() => { console.log('1'); return Promise.resolve() })
  *     .then(() => console.log('2'))

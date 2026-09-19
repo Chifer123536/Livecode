@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Вход — доля от единицы. Округлять до одного знака, хвостовой ноль убирать.
  *
+ * Примеры:
  *   formatPercent(0.1234) → '12,3%'
  *   formatPercent(1)      → '100%'
  *   formatPercent(0)      → '0%'

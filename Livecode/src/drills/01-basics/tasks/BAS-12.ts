@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Сколько цифр в целом числе. Знак минуса не считается.
  *
+ * Примеры:
  *   digitCount(1305) → 4
  *   digitCount(0)    → 1
  *   digitCount(-42)  → 2

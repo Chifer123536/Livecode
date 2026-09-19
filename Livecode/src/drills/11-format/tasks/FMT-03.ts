@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Выбрать форму слова по числу. forms = [одна штука, две штуки, пять штук].
  *
+ * Примеры:
  *   plural(1, FORMS)   → 'товар'
  *   plural(2, FORMS)   → 'товара'
  *   plural(5, FORMS)   → 'товаров'

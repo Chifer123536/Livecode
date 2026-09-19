@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Отсортировать по вычисленному ключу. Числа — по величине, строки — localeCompare.
  * ВХОДНОЙ МАССИВ НЕ МУТИРОВАТЬ.
  *
+ * Примеры:
  *   sortBy([{ n: 10 }, { n: 9 }], x => x.n) → [{ n: 9 }, { n: 10 }]
  */
 export const sortBy = <T>(list: T[], keyOf: (item: T) => number | string): T[] => todo()

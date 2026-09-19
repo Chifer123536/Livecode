@@ -3,6 +3,8 @@ import { todo } from '../../../shared/kit'
 // #region ASY-19 | Безопасный вызов | ★★☆
 /**
  * Вернуть кортеж [error, data] вместо исключения — приём из Go.
+ *
+ * Примеры:
  * Успех → [null, data]. Ошибка → [error, null].
  *
  *   const [error, user] = await safe(loadUser())

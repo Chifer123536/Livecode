@@ -6,6 +6,7 @@ import { ApiError } from './API-06'
  * Бэкенд отвечает { data, error }. Достать data, а на error — бросить ApiError.
  * Ответ без конверта считать данными как есть.
  *
+ * Примеры:
  *   unwrapEnvelope({ data: [1] })                       → [1]
  *   unwrapEnvelope({ error: { message: 'нет', code: 404 } }) → бросает ApiError(404)
  */

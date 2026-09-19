@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Знак плюс для роста, минус для падения, ноль без знака.
  *
+ * Примеры:
  *   formatDelta(12)  → '+12%'
  *   formatDelta(-3)  → '-3%'
  *   formatDelta(0)   → '0%'

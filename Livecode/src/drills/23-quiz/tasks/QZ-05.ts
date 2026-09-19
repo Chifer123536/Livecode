@@ -2,6 +2,8 @@ import { todo } from '../../../shared/kit'
 
 // #region QZ-05 | async/await | ★★★
 /**
+ * Что напечатает код ниже и в каком порядке? Верни массив строк — по одной на каждый вывод.
+ *
  *   async function run() {
  *     console.log('1')
  *     await null

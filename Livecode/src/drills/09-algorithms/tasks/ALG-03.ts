@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Одинаковый набор букв. Сортировка — O(n log n), счётчик — O(n).
  *
+ * Примеры:
  *   isAnagram('листок', 'слиток') → true
  */
 export const isAnagram = (first: string, second: string): boolean => todo()

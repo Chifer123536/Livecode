@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Мужской род, именительный падеж.
  *
+ * Примеры:
  *   formatOrdinal(3) → '3-й'
  */
 export const formatOrdinal = (n: number): string => todo()

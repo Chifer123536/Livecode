@@ -2,6 +2,8 @@ import { todo } from '../../../shared/kit'
 
 // #region QZ-08 | Микрозадача внутри таймера | ★★★
 /**
+ * Что напечатает код ниже и в каком порядке? Верни массив строк — по одной на каждый вывод.
+ *
  *   setTimeout(() => {
  *     console.log('1')
  *     Promise.resolve().then(() => console.log('2'))

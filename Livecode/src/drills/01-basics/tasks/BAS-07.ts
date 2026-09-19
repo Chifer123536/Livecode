@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Массив от n до 1.
  *
+ * Примеры:
  *   countdown(3) → [3, 2, 1]
  *   countdown(0) → []
  */

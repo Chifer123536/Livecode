@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Двоичное представление неотрицательного целого. Без toString(2).
  *
+ * Примеры:
  *   toBinary(10) → '1010'
  *   toBinary(0)  → '0'
  *   toBinary(1)  → '1'

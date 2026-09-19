@@ -6,6 +6,7 @@ import { todo } from '../../../shared/kit'
  * Набор полей задаётся явно. Поле считается числовым, только если оно числовое во ВСЕХ строках.
  * Пустой список — прочерки во всех полях.
  *
+ * Примеры:
  *   summaryRow(items, ['price', 'title']) → { price: 300, title: '—' }
  */
 export const summaryRow = <T extends object>(items: T[], keys: Array<keyof T>): Record<string, number | string> =>

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Секунды в человеческий вид, максимум ДВЕ единицы, нулевые пропускать.
  *
+ * Примеры:
  *   formatDuration(30)   → '30 с'
  *   formatDuration(65)   → '1 мин 5 с'
  *   formatDuration(3600) → '1 ч'

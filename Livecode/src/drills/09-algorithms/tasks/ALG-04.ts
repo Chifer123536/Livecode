@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Индекс первого символа, встречающегося один раз, иначе -1. Два прохода.
  *
+ * Примеры:
  *   firstUniqueChar('abca') → 1
  */
 export const firstUniqueChar = (text: string): number => todo()

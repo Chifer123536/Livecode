@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Учитывать только буквы и цифры, регистр игнорировать.
  * Два указателя с краёв — без создания очищенной копии это O(1) памяти.
  *
+ * Примеры:
  *   isPalindromeLoose('А роза упала на лапу Азора') → true
  */
 export const isPalindromeLoose = (text: string): boolean => todo()

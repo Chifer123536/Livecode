@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Два преобразования в обе стороны. В objectToMap брать только собственные ключи.
  *
+ * Примеры:
  *   mapToObject(new Map([['a', 1]])) → { a: 1 }
  *   objectToMap({ a: 1 })            → Map { 'a' => 1 }
  */

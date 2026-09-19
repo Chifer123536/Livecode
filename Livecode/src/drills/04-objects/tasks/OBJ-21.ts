@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Собрать пути до всех НЕобъектных значений.
  *
+ * Примеры:
  *   deepKeys({ a: { b: 1 }, c: 2 }) → ['a.b', 'c']
  */
 export const deepKeys = (obj: object): string[] => todo()

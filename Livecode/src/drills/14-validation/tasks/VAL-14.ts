@@ -6,6 +6,7 @@ import { todo } from '../../../shared/kit'
  * Сначала проверяется расширение, потом размер. Тексты ошибок дословно:
  *   `Допустимые форматы: ${extensions.join(', ')}` и `Файл больше ${maxSize} байт`.
  *
+ * Примеры:
  *   validateFile({ name: 'a.PNG', size: 100 }, { maxSize: 1000, extensions: ['png'] }) → null
  */
 export type FileLike = { name: string; size: number }

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Регистр и пробелы не важны.
  *
+ * Примеры:
  *   isAnagram('Тесла', 'Салет') → true
  *   isAnagram('abc', 'abd')     → false
  */

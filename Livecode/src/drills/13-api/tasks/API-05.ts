@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Обратное преобразование — нужно на отправку.
  *
+ * Примеры:
  *   snakeizeKeys({ userName: 'Ян' }) → { user_name: 'Ян' }
  */
 export const snakeizeKeys = (value: unknown): unknown => todo()

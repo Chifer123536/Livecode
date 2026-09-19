@@ -8,6 +8,8 @@ import { todo } from '../../../shared/kit'
  *  - при смене url предыдущий запрос отменяется через AbortController;
  *  - ответ отменённого запроса в состояние не попадает (гонка);
  *  - AbortError не показывается как ошибка;
+ *
+ * Примеры:
  *  - !response.ok → ошибка вида 'HTTP 500'.
  */
 export type FetchApi<T> = { data: T | null; error: string | null; loading: boolean; reload: () => void }

@@ -7,6 +7,8 @@ import type { ReactNode } from 'react'
  *  - количество не опускается ниже 1; кнопка aria-label `Удалить ${title}` убирает строку;
  *  - строка показывает «{title} — {price} ₽ × {qty} = {sum} ₽»;
  *  - внизу «Итого: N ₽» и «Позиций: K»;
+ *
+ * Примеры:
  *  - пустая корзина → <p>Корзина пуста</p>.
  */
 export type CartLine = { id: string; title: string; price: number; qty: number }

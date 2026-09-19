@@ -6,6 +6,8 @@ import type { Product } from './_pack'
  * Все условия применяются одновременно, отсутствующее условие ничего не отсекает.
  *
  *   filterProducts(items, { category: 'phone', maxPrice: 1000, onlyInStock: true })
+ *
+ * Примеры:
  *   filterProducts(items, {}) → все items
  */
 export type ProductFilter = {

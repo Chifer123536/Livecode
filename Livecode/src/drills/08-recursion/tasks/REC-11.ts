@@ -5,6 +5,7 @@ import type { TreeNode } from './_pack'
 /**
  * Пустое дерево — 0, только корни — 1.
  *
+ * Примеры:
  *   treeDepth([{ id: 1, title: 'a' }]) → 1
  */
 export const treeDepth = (nodes: TreeNode[]): number => todo()

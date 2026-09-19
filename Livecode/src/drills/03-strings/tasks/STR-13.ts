@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Пробелы не считаются. При равенстве побеждает первый встреченный.
  *
+ * Примеры:
  *   mostFrequent('abbccc') → 'c'
  *   mostFrequent('aab b')  → 'a'
  */

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Стек. Закрывающая скобка обязана совпасть с вершиной стека.
  *
+ * Примеры:
  *   isBalanced('{[()]}') → true
  *   isBalanced('([)]')   → false
  */

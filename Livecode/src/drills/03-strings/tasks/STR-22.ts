@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Подряд идущие одинаковые символы заменить на символ и количество.
  * Одиночные символы остаются без цифры.
  *
+ * Примеры:
  *   compress('aaabb') → 'a3b2'
  *   compress('abc')   → 'abc'
  *   compress('aabaa') → 'a2ba2'

@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Убрать повторы, порядок первого появления сохранить.
  *
+ * Примеры:
  *   unique([1, 2, 2, 3, 1]) → [1, 2, 3]
  */
 export const unique = <T>(list: T[]): T[] => todo()

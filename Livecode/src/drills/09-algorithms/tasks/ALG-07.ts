@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Окно переменной ширины: правый край едет всегда, левый прыгает за последнее
  * вхождение повторившегося символа.
  *
+ * Примеры:
  *   longestUniqueSubstring('abcabcbb') → 3
  *   longestUniqueSubstring('bbbb')     → 1
  */

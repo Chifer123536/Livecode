@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Формат ДД.ММ.ГГГГ, всегда по две цифры.
  *
+ * Примеры:
  *   formatDate(new Date(2026, 2, 5)) → '05.03.2026'
  */
 export const formatDate = (date: Date): string => todo()

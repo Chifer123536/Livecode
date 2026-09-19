@@ -6,6 +6,8 @@ import { todo } from '../../../shared/kit'
  * Дополнительно поддержать пропуск аргумента символом _ (экспортирован ниже).
  *
  *   const f = curry3((a, b, c) => `${a}${b}${c}`)
+ *
+ * Примеры:
  *   f('a', _, 'c')('b') → 'abc'
  */
 export const _ = Symbol('placeholder')

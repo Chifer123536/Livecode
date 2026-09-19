@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Страницы с единицы. Номер за пределами диапазона зажимается, а не падает.
  *
+ * Примеры:
  *   paginate([1..10], 2, 3) → { items: [4, 5, 6], page: 2, pages: 4, total: 10 }
  *   paginate([], 1, 10)     → { items: [], page: 1, pages: 1, total: 0 }
  */

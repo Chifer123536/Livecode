@@ -4,6 +4,7 @@ import { todo } from '../../../shared/kit'
 /**
  * Склеить базу, путь и параметры без двойных слэшей и лишнего '?'.
  *
+ * Примеры:
  *   buildUrl('https://api.dev/', '/users', { page: 2 }) → 'https://api.dev/users?page=2'
  *   buildUrl('https://api.dev', 'users')                → 'https://api.dev/users'
  */

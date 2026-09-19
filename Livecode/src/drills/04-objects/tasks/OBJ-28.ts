@@ -5,6 +5,7 @@ import { todo } from '../../../shared/kit'
  * Сравнить объекты на один уровень через Object.is.
  * Ровно это делает React.memo и useMemo при сравнении зависимостей.
  *
+ * Примеры:
  *   shallowEqual({ a: 1 }, { a: 1 })         → true
  *   shallowEqual({ a: {} }, { a: {} })       → false  // разные ссылки
  */
