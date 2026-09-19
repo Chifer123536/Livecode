@@ -34,5 +34,8 @@ export default defineConfig(({ mode }) => ({
 		setupFiles: ['./vitest.setup.ts'],
 		include: ['src/drills/**/*.test.{ts,tsx}'],
 		testTimeout: 10_000,
+		// В стеке нужен только свой код: кадры из vitest и из заглушки todo() лишь мешают читать.
+		onStackTrace: (_error, { file }) =>
+			!file.includes('node_modules') && !file.replace(/\\/g, '/').includes('src/shared/kit'),
 	},
 }))

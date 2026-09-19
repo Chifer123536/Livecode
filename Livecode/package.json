@@ -7,7 +7,7 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
-		"t": "vitest",
+		"t": "vitest --hideSkippedTests",
 		"test": "vitest run",
 		"verify": "vitest run --mode solutions && node scripts/verify-types.mjs",
 		"task": "node scripts/task.mjs",

@@ -93,19 +93,22 @@ console.log(c.gray('  выйти   → Ctrl+C'))
 console.log()
 
 // Открываем файл в редакторе на строке с заготовкой. Нет `code` в PATH — просто пропускаем.
+// Без shell: иначе node ругается предупреждением про неэкранированные аргументы.
 if (!flags.has('-n') && !flags.has('--no-open')) {
-	const editor = spawn('code', ['-g', `${file}:${task.startLine + 1}`], {
+	const editor = spawn(process.platform === 'win32' ? 'code.cmd' : 'code', ['-g', `${file}:${task.startLine + 1}`], {
 		stdio: 'ignore',
-		shell: process.platform === 'win32',
 	})
 	editor.on('error', () => console.log(c.yellow('  (VS Code не найден в PATH — открой файл сам)')))
 }
 
-// Watch только по этой задаче: файл пака + фильтр по имени describe.
+// Watch только по этой задаче.
+// hideSkippedTests убирает простыню из соседних задач пака, bail=1 не повторяет
+// одну и ту же ошибку трижды: правишь код — проверки идут заново с первой.
 const vitest = path.join(ROOT, 'node_modules', 'vitest', 'vitest.mjs')
-const child = spawn(process.execPath, [vitest, `src/drills/${pack.name}`, '-t', task.id], {
-	cwd: ROOT,
-	stdio: 'inherit',
-})
+const child = spawn(
+	process.execPath,
+	[vitest, `src/drills/${pack.name}`, '-t', task.id, '--hideSkippedTests', '--bail=1'],
+	{ cwd: ROOT, stdio: 'inherit' }
+)
 
 child.on('exit', code => process.exit(code ?? 0))
