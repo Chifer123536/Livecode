@@ -468,7 +468,7 @@ describe('RB-21 TitleCounter', () => {
 	it('возвращает заголовок при размонтировании', () => {
 		const view = render(<TitleCounter />)
 		view.unmount()
-		expect(document.title).toBe('livecode-drills')
+		expect(document.title).toBe('Livecode')
 	})
 })
 // #endregion

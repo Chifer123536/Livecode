@@ -2,7 +2,7 @@
 	"version": "0.0.1",
 	"configurations": [
 		{
-			"name": "livecode-drills",
+			"name": "livecode",
 			"runtimeExecutable": "yarn",
 			"runtimeArgs": ["dev"],
 			"port": 5173

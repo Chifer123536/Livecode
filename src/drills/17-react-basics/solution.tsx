@@ -413,7 +413,7 @@ export function TitleCounter() {
 	useEffect(() => {
 		document.title = String(count)
 		return () => {
-			document.title = 'livecode-drills'
+			document.title = 'Livecode'
 		}
 	}, [count])
 
