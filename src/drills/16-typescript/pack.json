@@ -1,0 +1,9 @@
+{
+	"code": "TS",
+	"order": 16,
+	"level": 4,
+	"title": "TypeScript",
+	"subtitle": "дженерики, сужение, utility types",
+	"norm": 90,
+	"why": "На вакансию с TypeScript в требованиях типизацию спрашивают отдельно. Половина пака — написать utility type руками, это любимый вопрос."
+}

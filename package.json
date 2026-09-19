@@ -1,0 +1,42 @@
+{
+	"name": "livecode-drills",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"t": "vitest",
+		"test": "vitest run",
+		"verify": "vitest run --mode solutions && node scripts/verify-types.mjs",
+		"task": "node scripts/task.mjs",
+		"progress": "node scripts/progress.mjs",
+		"lint": "eslint .",
+		"typecheck": "tsc -p tsconfig.app.json",
+		"types": "node scripts/verify-types.mjs"
+	},
+	"dependencies": {
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.39.4",
+		"@testing-library/dom": "10",
+		"@testing-library/jest-dom": "7.0.1",
+		"@testing-library/react": "16.3.3",
+		"@testing-library/user-event": "14.6.7",
+		"@types/node": "^26.6.1",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.3",
+		"@vitejs/plugin-react": "^6.0.1",
+		"eslint": "^9.39.4",
+		"eslint-plugin-react-hooks": "^7.0.1",
+		"eslint-plugin-react-refresh": "^0.5.2",
+		"globals": "^17.4.0",
+		"happy-dom": "20.14.5",
+		"typescript": "5",
+		"vite": "^8.0.4",
+		"vitest": "5.0.1"
+	}
+}
