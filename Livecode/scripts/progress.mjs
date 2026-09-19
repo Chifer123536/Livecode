@@ -60,8 +60,9 @@ function collectTypeErrors(packs) {
 		const absolute = path.resolve(ROOT, file)
 
 		for (const pack of packs) {
-			if (pack.tasksFile !== absolute) continue
 			for (const task of pack.tasks.values()) {
+				// Задача живёт в своём файле; для старой раскладки — общий tasks.ts пака.
+				if (path.resolve(task.file ?? pack.tasksFile) !== absolute) continue
 				if (Number(lineNumber) < task.startLine || Number(lineNumber) > task.endLine) continue
 				const list = byTask.get(task.id) ?? []
 				list.push(`${code}: ${message}`)

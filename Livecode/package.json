@@ -11,6 +11,7 @@
 		"test": "vitest run",
 		"verify": "vitest run --mode solutions && node scripts/verify-types.mjs",
 		"task": "node scripts/task.mjs",
+		"solve": "node scripts/solve.mjs",
 		"progress": "node scripts/progress.mjs",
 		"lint": "eslint .",
 		"typecheck": "tsc -p tsconfig.app.json",

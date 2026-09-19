@@ -139,7 +139,8 @@ function listPack(pack) {
 	}
 
 	console.log(c.gray('  ' + '─'.repeat(78)))
-	console.log(c.gray(`  норматив на пак: ~${pack.norm} мин · файл: src/drills/${pack.name}/tasks.ts`))
+	console.log(c.gray(`  норматив на пак: ~${pack.norm} мин · папка: src/drills/${pack.name}/tasks/`))
+	console.log(c.gray(`  yarn solve ${[...pack.tasks.keys()][0]}   — открыть задачу и гонять только её тесты`))
 	console.log()
 }
 

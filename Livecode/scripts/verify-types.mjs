@@ -26,8 +26,12 @@ const result = spawnSync(process.execPath, [tscBin, '-p', tsconfig, '--noEmit', 
 
 const lines = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.split(/\r?\n/).filter(line => /error TS\d+/.test(line))
 
+/** Файл с задачей: либо `tasks/BAS-07.ts`, либо общий `tasks.ts` старой раскладки. */
+const isTaskFile = line =>
+	/[\\/]tasks[\\/][^\\/]+\.tsx?\(/.test(line) || (/tasks\.tsx?\(/.test(line) && !/tasks\.test\./.test(line))
+
 const inSolutions = lines.filter(line => /solution\.tsx?\(/.test(line))
-const inTasks = lines.filter(line => /tasks\.tsx?\(/.test(line) && !/tasks\.test\./.test(line))
+const inTasks = lines.filter(isTaskFile)
 const elsewhere = lines.filter(line => !inSolutions.includes(line) && !inTasks.includes(line))
 
 if (inSolutions.length > 0 || elsewhere.length > 0) {

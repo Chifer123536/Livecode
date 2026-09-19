@@ -66,6 +66,23 @@ export function parseRegions(file) {
 	return result
 }
 
+/**
+ * Задачи пака. Каждая лежит в своём файле в `tasks/`, служебные файлы начинаются с подчёркивания.
+ * Старая раскладка (все задачи в одном tasks.ts) тоже поддерживается.
+ */
+function loadTasks(dir, fallbackFile) {
+	const tasksDir = path.join(dir, 'tasks')
+	if (!fs.existsSync(tasksDir) || !fs.statSync(tasksDir).isDirectory()) return parseRegions(fallbackFile)
+
+	const result = new Map()
+	for (const name of fs.readdirSync(tasksDir).sort()) {
+		if (name.startsWith('_')) continue
+		const file = path.join(tasksDir, name)
+		for (const [id, task] of parseRegions(file)) result.set(id, { ...task, file })
+	}
+	return result
+}
+
 /** Все паки, отсортированные по order. */
 export function loadPacks() {
 	if (!fs.existsSync(DRILLS)) return []
@@ -82,7 +99,7 @@ export function loadPacks() {
 			const tasksFile = firstExisting(dir, ['tasks.tsx', 'tasks.ts'])
 			const solutionFile = firstExisting(dir, ['solution.tsx', 'solution.ts'])
 			const testFile = firstExisting(dir, ['tasks.test.tsx', 'tasks.test.ts'])
-			const tasks = parseRegions(tasksFile)
+			const tasks = loadTasks(dir, tasksFile)
 
 			return {
 				...meta,
