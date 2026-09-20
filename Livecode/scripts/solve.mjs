@@ -93,12 +93,20 @@ console.log(c.gray('  выйти   → Ctrl+C'))
 console.log()
 
 // Открываем файл в редакторе на строке с заготовкой. Нет `code` в PATH — просто пропускаем.
-// Без shell: иначе node ругается предупреждением про неэкранированные аргументы.
+// На Windows code — это .cmd, а node с 20.12 отказывается спавнить .cmd без shell и кидает
+// EINVAL синхронно, мимо обработчика 'error'. Поэтому win32 идёт через shell с кавычками.
 if (!flags.has('-n') && !flags.has('--no-open')) {
-	const editor = spawn(process.platform === 'win32' ? 'code.cmd' : 'code', ['-g', `${file}:${task.startLine + 1}`], {
-		stdio: 'ignore',
-	})
-	editor.on('error', () => console.log(c.yellow('  (VS Code не найден в PATH — открой файл сам)')))
+	const win = process.platform === 'win32'
+	const target = `${file}:${task.startLine + 1}`
+	const miss = () => console.log(c.yellow('  (VS Code не найден в PATH — открой файл сам)'))
+	try {
+		const editor = win
+			? spawn('code.cmd', ['-g', `"${target}"`], { stdio: 'ignore', shell: true, windowsHide: true })
+			: spawn('code', ['-g', target], { stdio: 'ignore' })
+		editor.on('error', miss)
+	} catch {
+		miss()
+	}
 }
 
 // Watch только по этой задаче.
