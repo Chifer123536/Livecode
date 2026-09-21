@@ -1,4 +1,3 @@
-import { todo } from '../../../shared/kit'
 
 // #region BAS-02 | Чётное число | ★☆☆
 /**
@@ -9,5 +8,7 @@ import { todo } from '../../../shared/kit'
  *   isEven(-3) → false
  *   isEven(0)  → true
  */
-export const isEven = (n: number): boolean => todo()
+export const isEven = (n: number): boolean => {
+	return n % 2 === 0
+}
 // #endregion

@@ -58,16 +58,25 @@ function taskCard(pack, task, { withSolution = false } = {}) {
 }
 
 function packCard(pack, options) {
-	const cards = [...pack.tasks.values()].map(task => taskCard(pack, task, options).split('\n').slice(PROMPT.split('\n').length + 1).join('\n'))
+	const cards = [...pack.tasks.values()].map(task =>
+		taskCard(pack, task, options)
+			.split('\n')
+			.slice(PROMPT.split('\n').length + 1)
+			.join('\n'),
+	)
 	return [PROMPT, '', `# Пак ${pack.code} · ${pack.title}`, pack.why ?? '', '', ...cards].join('\n')
 }
 
 function copyToClipboard(text) {
-	const command = process.platform === 'win32' ? 'clip' : process.platform === 'darwin' ? 'pbcopy' : 'xclip'
+	const command =
+		process.platform === 'win32' ? 'clip' : process.platform === 'darwin' ? 'pbcopy' : 'xclip'
 	const args = process.platform === 'linux' ? ['-selection', 'clipboard'] : []
 	return new Promise(resolve => {
 		try {
-			const child = spawn(command, args, { stdio: ['pipe', 'ignore', 'ignore'], shell: process.platform === 'win32' })
+			const child = spawn(command, args, {
+				stdio: ['pipe', 'ignore', 'ignore'],
+				shell: process.platform === 'win32',
+			})
 			child.on('error', () => resolve(false))
 			child.on('close', code => resolve(code === 0))
 			child.stdin.end(text)
@@ -94,7 +103,9 @@ function listPacks(packs) {
 	for (const pack of packs) {
 		if (pack.level !== currentLevel) {
 			currentLevel = pack.level
-			console.log(c.gray(`  ── уровень ${currentLevel} ` + '─'.repeat(Math.max(0, rule.length - 13))))
+			console.log(
+				c.gray(`  ── уровень ${currentLevel} ` + '─'.repeat(Math.max(0, rule.length - 13))),
+			)
 		}
 
 		const count = pack.tasks.size
@@ -108,14 +119,16 @@ function listPacks(packs) {
 				padEnd(c.bold(pack.title), titleWidth) +
 				c.gray(padEnd(pack.subtitle.slice(0, subWidth - 2), subWidth)) +
 				padEnd(`${count} зад.`, 9) +
-				(progress ? bar(done, count, 12) + ' ' + c.gray(`${done}/${count}`) : c.gray(`~${pack.norm} мин`))
+				(progress
+					? bar(done, count, 12) + ' ' + c.gray(`${done}/${count}`)
+					: c.gray(`~${pack.norm} мин`)),
 		)
 	}
 
 	console.log(c.gray('  ' + rule))
 	console.log(
 		`  ${c.bold('Всего:')} ${c.bold(String(totalTasks))} задач в ${packs.length} паках` +
-			(progress ? ` · решено ${c.green(String(totalDone))}` : '')
+			(progress ? ` · решено ${c.green(String(totalDone))}` : ''),
 	)
 	console.log()
 	console.log(c.gray('  yarn task ARR        — список задач пака'))
@@ -135,12 +148,18 @@ function listPack(pack) {
 	for (const task of pack.tasks.values()) {
 		const state = progress?.tasks?.[task.id]
 		const mark = state === 'pass' ? c.green('✔') : state === 'fail' ? c.red('·') : c.gray('·')
-		console.log(`  ${mark} ${c.cyan(padEnd(task.id, 9))} ${padEnd(task.stars || '', 5)} ${task.title}`)
+		console.log(
+			`  ${mark} ${c.cyan(padEnd(task.id, 9))} ${padEnd(task.stars || '', 5)} ${task.title}`,
+		)
 	}
 
 	console.log(c.gray('  ' + '─'.repeat(78)))
-	console.log(c.gray(`  норматив на пак: ~${pack.norm} мин · папка: src/drills/${pack.name}/tasks/`))
-	console.log(c.gray(`  yarn solve ${[...pack.tasks.keys()][0]}   — открыть задачу и гонять только её тесты`))
+	console.log(
+		c.gray(`  норматив на пак: ~${pack.norm} мин · папка: src/drills/${pack.name}/tasks/`),
+	)
+	console.log(
+		c.gray(`  yarn solve ${[...pack.tasks.keys()][0]}   — открыть задачу и гонять только её тесты`),
+	)
 	console.log()
 }
 
@@ -162,10 +181,14 @@ async function main() {
 	if (query.toLowerCase() === 'next') {
 		const progress = readProgress()
 		if (!progress) {
-			console.log(c.yellow('Сначала запусти `yarn progress` — без него неизвестно, что уже решено.'))
+			console.log(
+				c.yellow('Сначала запусти `yarn progress` — без него неизвестно, что уже решено.'),
+			)
 			return
 		}
-		const pending = packs.flatMap(p => [...p.tasks.keys()]).find(id => progress.tasks?.[id] !== 'pass')
+		const pending = packs
+			.flatMap(p => [...p.tasks.keys()])
+			.find(id => progress.tasks?.[id] !== 'pass')
 		if (!pending) {
 			console.log(c.green('Всё решено. Можешь идти на собес.'))
 			return
@@ -182,7 +205,9 @@ async function main() {
 		console.log(card)
 		if (copy) {
 			const ok = await copyToClipboard(card)
-			console.error(ok ? c.green('\n[скопировано в буфер обмена]') : c.yellow('\n[скопировать не удалось]'))
+			console.error(
+				ok ? c.green('\n[скопировано в буфер обмена]') : c.yellow('\n[скопировать не удалось]'),
+			)
 		} else {
 			console.error(c.gray('\n[подсказка] добавь -c, чтобы карточка сразу ушла в буфер обмена'))
 		}

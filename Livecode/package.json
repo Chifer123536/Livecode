@@ -4,6 +4,8 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
+		"menu": "node scripts/menu.mjs",
+		"start": "node scripts/menu.mjs",
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
@@ -15,7 +17,8 @@
 		"progress": "node scripts/progress.mjs",
 		"lint": "eslint .",
 		"typecheck": "tsc -p tsconfig.app.json",
-		"types": "node scripts/verify-types.mjs"
+		"types": "node scripts/verify-types.mjs",
+		"clean": "node scripts/clean.mjs"
 	},
 	"dependencies": {
 		"react": "^19.2.4",

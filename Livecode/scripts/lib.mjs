@@ -56,7 +56,11 @@ export function parseRegions(file) {
 		}
 		if (/^\s*\/\/\s*#endregion/.test(line)) {
 			if (current) {
-				result.set(current.id, { ...current, endLine: lineNumber, body: current.lines.join('\n').trim() })
+				result.set(current.id, {
+					...current,
+					endLine: lineNumber,
+					body: current.lines.join('\n').trim(),
+				})
 			}
 			current = null
 			return
@@ -72,7 +76,8 @@ export function parseRegions(file) {
  */
 function loadTasks(dir, fallbackFile) {
 	const tasksDir = path.join(dir, 'tasks')
-	if (!fs.existsSync(tasksDir) || !fs.statSync(tasksDir).isDirectory()) return parseRegions(fallbackFile)
+	if (!fs.existsSync(tasksDir) || !fs.statSync(tasksDir).isDirectory())
+		return parseRegions(fallbackFile)
 
 	const result = new Map()
 	for (const name of fs.readdirSync(tasksDir).sort()) {
@@ -87,36 +92,38 @@ function loadTasks(dir, fallbackFile) {
 export function loadPacks() {
 	if (!fs.existsSync(DRILLS)) return []
 
-	return fs
-		.readdirSync(DRILLS, { withFileTypes: true })
-		.filter(entry => entry.isDirectory())
-		.map(entry => {
-			const dir = path.join(DRILLS, entry.name)
-			const metaFile = path.join(dir, 'pack.json')
-			if (!fs.existsSync(metaFile)) return null
+	return (
+		fs
+			.readdirSync(DRILLS, { withFileTypes: true })
+			.filter(entry => entry.isDirectory())
+			.map(entry => {
+				const dir = path.join(DRILLS, entry.name)
+				const metaFile = path.join(dir, 'pack.json')
+				if (!fs.existsSync(metaFile)) return null
 
-			const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'))
-			const tasksFile = firstExisting(dir, ['tasks.tsx', 'tasks.ts'])
-			const solutionFile = firstExisting(dir, ['solution.tsx', 'solution.ts'])
-			const testFile = firstExisting(dir, ['tasks.test.tsx', 'tasks.test.ts'])
-			const tasks = loadTasks(dir, tasksFile)
+				const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'))
+				const tasksFile = firstExisting(dir, ['tasks.tsx', 'tasks.ts'])
+				const solutionFile = firstExisting(dir, ['solution.tsx', 'solution.ts'])
+				const testFile = firstExisting(dir, ['tasks.test.tsx', 'tasks.test.ts'])
+				const tasks = loadTasks(dir, tasksFile)
 
-			return {
-				...meta,
-				dir,
-				name: entry.name,
-				tasksFile,
-				solutionFile,
-				testFile,
-				tasks,
-				solutions: parseRegions(solutionFile),
-				tests: parseRegions(testFile),
-			}
-		})
-		.filter(Boolean)
-		// Сначала по уровню, внутри уровня — по порядку. Иначе пак с маленьким уровнем,
-		// но большим номером выпадал бы отдельной группой в самом конце списка.
-		.sort((a, b) => (a.level ?? 9) - (b.level ?? 9) || (a.order ?? 99) - (b.order ?? 99))
+				return {
+					...meta,
+					dir,
+					name: entry.name,
+					tasksFile,
+					solutionFile,
+					testFile,
+					tasks,
+					solutions: parseRegions(solutionFile),
+					tests: parseRegions(testFile),
+				}
+			})
+			.filter(Boolean)
+			// Сначала по уровню, внутри уровня — по порядку. Иначе пак с маленьким уровнем,
+			// но большим номером выпадал бы отдельной группой в самом конце списка.
+			.sort((a, b) => (a.level ?? 9) - (b.level ?? 9) || (a.order ?? 99) - (b.order ?? 99))
+	)
 }
 
 export function findTask(packs, id) {
@@ -129,7 +136,11 @@ export function findTask(packs, id) {
 
 export function findPack(packs, code) {
 	const wanted = code.toUpperCase()
-	return packs.find(p => p.code.toUpperCase() === wanted || p.name.toLowerCase() === code.toLowerCase()) ?? null
+	return (
+		packs.find(
+			p => p.code.toUpperCase() === wanted || p.name.toLowerCase() === code.toLowerCase(),
+		) ?? null
+	)
 }
 
 export function readProgress() {

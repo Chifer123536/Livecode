@@ -1,5 +1,3 @@
-import { todo } from '../../../shared/kit'
-
 // #region BAS-04 | Модуль числа | ★☆☆
 /**
  * Модуль числа. Без Math.abs — нужен явный if или тернарник.
@@ -8,5 +6,7 @@ import { todo } from '../../../shared/kit'
  *   abs(-7) → 7
  *   abs(7)  → 7
  */
-export const abs = (n: number): number => todo()
+export const abs = (n: number): number => {
+	return n < 0 ? -n : n
+}
 // #endregion

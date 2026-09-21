@@ -19,16 +19,23 @@ if (!fs.existsSync(tscBin)) {
 	process.exit(0)
 }
 
-const result = spawnSync(process.execPath, [tscBin, '-p', tsconfig, '--noEmit', '--pretty', 'false'], {
-	cwd: ROOT,
-	encoding: 'utf8',
-})
+const result = spawnSync(
+	process.execPath,
+	[tscBin, '-p', tsconfig, '--noEmit', '--pretty', 'false'],
+	{
+		cwd: ROOT,
+		encoding: 'utf8',
+	},
+)
 
-const lines = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.split(/\r?\n/).filter(line => /error TS\d+/.test(line))
+const lines = `${result.stdout ?? ''}\n${result.stderr ?? ''}`
+	.split(/\r?\n/)
+	.filter(line => /error TS\d+/.test(line))
 
 /** Файл с задачей: либо `tasks/BAS-07.ts`, либо общий `tasks.ts` старой раскладки. */
 const isTaskFile = line =>
-	/[\\/]tasks[\\/][^\\/]+\.tsx?\(/.test(line) || (/tasks\.tsx?\(/.test(line) && !/tasks\.test\./.test(line))
+	/[\\/]tasks[\\/][^\\/]+\.tsx?\(/.test(line) ||
+	(/tasks\.tsx?\(/.test(line) && !/tasks\.test\./.test(line))
 
 const inSolutions = lines.filter(line => /solution\.tsx?\(/.test(line))
 const inTasks = lines.filter(isTaskFile)
@@ -40,5 +47,6 @@ if (inSolutions.length > 0 || elsewhere.length > 0) {
 	process.exit(1)
 }
 
-const note = inTasks.length > 0 ? c.gray(` (в нерешённых задачах ${inTasks.length} — так и должно быть)`) : ''
+const note =
+	inTasks.length > 0 ? c.gray(` (в нерешённых задачах ${inTasks.length} — так и должно быть)`) : ''
 console.log(c.green('  Типы эталонов в порядке') + note)

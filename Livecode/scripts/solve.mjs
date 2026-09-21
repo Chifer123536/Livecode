@@ -2,17 +2,26 @@
 /**
  * Открыть задачу и гонять только её тесты.
  *
- *   yarn solve            следующая нерешённая
+ *   yarn solve            первая НЕрешённая — от самых лёгких паков к сложным
  *   yarn solve BAS-07     конкретная задача
+ *   yarn solve BAS        первая нерешённая внутри пака
+ *   yarn solve -f         пересчитать прогресс принудительно и взять следующую
  *   yarn solve BAS-07 -n  не открывать редактор, только тесты
+ *
+ * Без аргумента команда сама решает, надо ли перепроверять состояние:
+ * если файлы задач правились после последнего прогона — тесты прогоняются заново,
+ * иначе берётся кеш из `.progress.json`. Так «следующая» всегда настоящая,
+ * а не та, что была на момент последнего `yarn progress`.
  */
 import { spawn } from 'node:child_process'
 import path from 'node:path'
-import { c, findTask, loadPacks, readProgress, ROOT } from './lib.mjs'
+import { c, findPack, findTask, loadPacks, ROOT } from './lib.mjs'
+import { ensureState, firstUnsolved, isStale } from './state.mjs'
 
 const argv = process.argv.slice(2)
 const flags = new Set(argv.filter(a => a.startsWith('-')))
 const args = argv.filter(a => !a.startsWith('-'))
+const force = flags.has('-f') || flags.has('--fresh')
 
 const packs = loadPacks()
 if (packs.length === 0) {
@@ -20,12 +29,24 @@ if (packs.length === 0) {
 	process.exit(1)
 }
 
-/** Без аргумента берём первую нерешённую по последнему прогону `yarn progress`. */
-function nextId() {
-	const progress = readProgress()
-	const all = packs.flatMap(pack => [...pack.tasks.keys()])
-	if (!progress) return all[0]
-	return all.find(id => progress.tasks?.[id] !== 'pass') ?? all[0]
+/** Первая несданная задача — по всему тренажёру или внутри одного пака. */
+function pickUnsolved(scope) {
+	const list = scope ? [scope] : packs
+	const stale = force || isStale(list)
+	if (stale) console.log(c.gray('  прогресс устарел, перепроверяю...'))
+
+	const { state } = ensureState(list, { force })
+	const found = firstUnsolved(list, state)
+
+	if (!found) {
+		console.log(
+			scope
+				? c.green(`  Пак ${scope.code} сдан полностью. Возьми следующий: yarn task`)
+				: c.green('  Всё решено. Можешь идти на собес.'),
+		)
+		process.exit(0)
+	}
+	return found
 }
 
 /** Текст условия из комментария задачи, без звёздочек и обрамления. */
@@ -53,11 +74,30 @@ function signature(body) {
 function checks(body) {
 	const lines = body.split('\n')
 	const inner = lines.slice(1, -1)
-	return inner.map(line => line.replace(/^\t/, '')).join('\n').trim()
+	return inner
+		.map(line => line.replace(/^\t/, ''))
+		.join('\n')
+		.trim()
 }
 
-const query = args[0] ?? nextId()
-const found = findTask(packs, query)
+const query = args[0]
+let found = null
+let auto = false
+
+if (!query) {
+	found = pickUnsolved(null)
+	auto = true
+} else {
+	found = findTask(packs, query)
+	if (!found) {
+		// Не задача — возможно, код пака: тогда берём первую несданную внутри него.
+		const pack = findPack(packs, query)
+		if (pack) {
+			found = pickUnsolved(pack)
+			auto = true
+		}
+	}
+}
 
 if (!found) {
 	console.log(c.red(`Не нашла задачу «${query}». Список: yarn task`))
@@ -70,6 +110,7 @@ const relative = path.relative(ROOT, file).replace(/\\/g, '/')
 const test = pack.tests.get(task.id)
 
 console.log()
+if (auto) console.log(c.gray('  следующая нерешённая:'))
 console.log(`  ${c.bold(task.id)} · ${c.bold(task.title)} ${c.gray(task.stars)}`)
 console.log(c.gray(`  ${relative}  ·  пак ${pack.code}, норматив ~${pack.norm} мин на весь пак`))
 
@@ -88,8 +129,11 @@ if (test) {
 }
 
 console.log()
-console.log(c.gray(`  застрял → yarn task ${task.id} -c   (карточка в буфер, вставить в claude.ai)`))
-console.log(c.gray('  выйти   → Ctrl+C'))
+console.log(
+	c.gray(`  застрял  → yarn task ${task.id} -c   (карточка в буфер, вставить в claude.ai)`),
+)
+console.log(c.gray(`  сбросить → yarn clean ${task.id}`))
+console.log(c.gray('  выйти    → Ctrl+C'))
 console.log()
 
 // Открываем файл в редакторе на строке с заготовкой. Нет `code` в PATH — просто пропускаем.
@@ -101,7 +145,11 @@ if (!flags.has('-n') && !flags.has('--no-open')) {
 	const miss = () => console.log(c.yellow('  (VS Code не найден в PATH — открой файл сам)'))
 	try {
 		const editor = win
-			? spawn('code.cmd', ['-g', `"${target}"`], { stdio: 'ignore', shell: true, windowsHide: true })
+			? spawn('code.cmd', ['-g', `"${target}"`], {
+					stdio: 'ignore',
+					shell: true,
+					windowsHide: true,
+				})
 			: spawn('code', ['-g', target], { stdio: 'ignore' })
 		editor.on('error', miss)
 	} catch {
@@ -116,7 +164,7 @@ const vitest = path.join(ROOT, 'node_modules', 'vitest', 'vitest.mjs')
 const child = spawn(
 	process.execPath,
 	[vitest, `src/drills/${pack.name}`, '-t', task.id, '--hideSkippedTests', '--bail=1'],
-	{ cwd: ROOT, stdio: 'inherit' }
+	{ cwd: ROOT, stdio: 'inherit' },
 )
 
 child.on('exit', code => process.exit(code ?? 0))
