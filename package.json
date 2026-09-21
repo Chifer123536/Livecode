@@ -1,0 +1,13 @@
+{
+	"name": "practice",
+	"private": true,
+	"version": "1.0.0",
+	"description": "Корень репозитория: держит только общий форматтер для Livecode и next-lab",
+	"scripts": {
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
+	},
+	"devDependencies": {
+		"prettier": "^3.6.0"
+	}
+}

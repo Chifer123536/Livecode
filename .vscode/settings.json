@@ -1,0 +1,21 @@
+{
+	"editor.formatOnSave": true,
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.tabSize": 2,
+	"editor.insertSpaces": false,
+	"editor.detectIndentation": false,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit"
+	},
+	"files.eol": "\n",
+	"files.insertFinalNewline": true,
+	"files.trimTrailingWhitespace": true,
+	"prettier.requireConfig": true,
+	"[markdown]": {
+		"editor.insertSpaces": true,
+		"files.trimTrailingWhitespace": false
+	},
+	"[yaml]": {
+		"editor.insertSpaces": true
+	}
+}
