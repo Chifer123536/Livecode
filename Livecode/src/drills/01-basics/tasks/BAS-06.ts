@@ -1,5 +1,3 @@
-import { todo } from '../../../shared/kit'
-
 // #region BAS-06 | Среднее арифметическое | ★☆☆
 /**
  * Примеры:
@@ -8,5 +6,7 @@ import { todo } from '../../../shared/kit'
  *   average([1, 2, 3, 4]) → 2.5
  *   average([])           → 0
  */
-export const average = (nums: number[]): number => todo()
+export const average = (nums: number[]): number => {
+	return nums.length === 0 ? 0 : nums.reduce((acc, n) => acc + n, 0) / nums.length
+}
 // #endregion

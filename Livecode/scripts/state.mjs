@@ -8,12 +8,12 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { c, PROGRESS_FILE, readProgress, ROOT } from './lib.mjs'
+import { c, palette, PROGRESS_FILE, readProgress, ROOT } from './lib.mjs'
 
 const REPORT = path.join(ROOT, '.vitest-report.json')
 
 function runTests({ quiet = false } = {}) {
-	if (!quiet) process.stdout.write(c.gray('  гоняю тесты...'))
+	if (!quiet) process.stdout.write('  ' + palette.amber('⟳') + palette.faint(' гоняю тесты...'))
 	const vitestBin = path.join(ROOT, 'node_modules', 'vitest', 'vitest.mjs')
 	const result = spawnSync(
 		process.execPath,

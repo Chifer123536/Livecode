@@ -11,8 +11,19 @@
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import readline from 'node:readline'
-import { bar, c, loadPacks, padEnd, readProgress, ROOT } from './lib.mjs'
+import {
+	bar,
+	c,
+	loadPacks,
+	padEnd,
+	palette,
+	percentOf,
+	readProgress,
+	ROOT,
+	visibleWidth,
+} from './lib.mjs'
 import { isStale } from './state.mjs'
+import { GUTTER, key, line, mark, row, stars } from './ui.mjs'
 
 const CLEAR = '\x1b[2J\x1b[3J\x1b[H'
 const HIDE = '\x1b[?25l'
@@ -27,89 +38,124 @@ if (!process.stdin.isTTY) {
 let packs = loadPacks()
 let progress = readProgress()
 
-/** Стек экранов. Наверху — текущий. */
 const stack = []
 let selected = 0
 let message = ''
 
-// ── отрисовка ──────────────────────────────────────────────────────────
+// ── примитивы оформления ───────────────────────────────────────────────
 
-const RULE = '─'.repeat(72)
+const width = () => Math.max(48, Math.min(76, (process.stdout.columns ?? 80) - 6))
+
+/** Отметка задачи по её текущему состоянию в прогрессе. */
+const taskMark = id => mark(progress?.tasks?.[id])
+
+// ── отрисовка ──────────────────────────────────────────────────────────
 
 function header() {
 	const total = packs.reduce((sum, pack) => sum + pack.tasks.size, 0)
 	const done = Object.values(progress?.tasks ?? {}).filter(state => state === 'pass').length
-	const stale = progress ? isStale(packs) : true
+	const percent = percentOf(done, total)
 
-	const lines = []
-	lines.push('')
-	lines.push('  ' + c.bold(c.cyan('ТРЕНАЖЁР')) + c.gray('  ·  livecode drills'))
-	lines.push(c.gray('  ' + RULE))
+	const out = ['']
+	out.push(
+		row(
+			GUTTER.top,
+			c.bold(palette.accent('ТРЕНАЖЁР')) +
+				palette.surface('  ·  ') +
+				palette.faint('livecode drills'),
+		),
+	)
+	out.push(line())
+
 	if (progress) {
-		lines.push(`  ${bar(done, total, 32)}  ${c.bold(`${done}/${total}`)} ${c.gray('задач сдано')}`)
-		if (stale) lines.push(c.yellow('  прогресс устарел — файлы правились после последнего прогона'))
+		const counter = c.bold(palette.ink(String(done))) + palette.faint(`/${total}`)
+		const tail = percent === 100 ? palette.mint('всё сдано') : palette.faint(`${percent}%`)
+		out.push(line(bar(done, total, 30) + '  ' + counter + '  ' + tail))
+		if (isStale(packs)) {
+			out.push(
+				line(palette.amber('⟳ ') + palette.faint('прогресс устарел — файлы правились позже')),
+			)
+		}
 	} else {
-		lines.push(c.gray('  прогресс ещё не считался — выбери пункт «Прогресс»'))
+		out.push(line(palette.faint('прогресс ещё не считался — пункт «Прогресс»')))
 	}
-	lines.push(c.gray('  ' + RULE))
-	return lines
-}
 
-function footer(screen) {
-	const hints = ['↑↓ выбор', 'Enter открыть']
-	if (stack.length > 1) hints.push('Esc назад')
-	hints.push('q выход')
-	const lines = [c.gray('  ' + RULE), c.gray('  ' + hints.join('   ·   '))]
-	if (screen.hint) lines.splice(1, 0, c.gray('  ' + screen.hint))
-	return lines
+	return out
 }
 
 /** Список с окном прокрутки: длинные паки не должны выезжать за экран. */
 function renderList(items, cursor, height) {
-	const window = Math.max(5, Math.min(height, items.length))
+	const visible = Math.max(5, Math.min(height, items.length))
 	let start = 0
-	if (items.length > window) {
-		start = Math.min(Math.max(0, cursor - Math.floor(window / 2)), items.length - window)
+	if (items.length > visible) {
+		start = Math.min(Math.max(0, cursor - Math.floor(visible / 2)), items.length - visible)
 	}
 
-	const lines = []
-	if (start > 0) lines.push(c.gray('    ↑ ещё ' + start))
+	const inner = width()
+	const out = []
+	if (start > 0) out.push(line(palette.surface(`↑ ещё ${start}`)))
 
-	for (let index = start; index < start + window && index < items.length; index += 1) {
-		const item = items[index]
-		const active = index === cursor
-		const pointer = active ? c.cyan('▸ ') : '  '
-		const label = active ? c.bold(item.label) : item.label
-		const right = item.right ? '  ' + item.right : ''
-		lines.push('  ' + pointer + label + right)
+	for (let index = start; index < start + visible && index < items.length; index += 1) {
+		const entry = items[index]
+
+		if (entry.separator) {
+			out.push(line(palette.surface(entry.label)))
+			continue
+		}
+
+		const body = entry.right
+			? padEnd(entry.label, inner - visibleWidth(entry.right) - 3) + '  ' + entry.right
+			: entry.label
+
+		if (index === cursor) {
+			// Подложка на всю ширину строки — курсор видно боковым зрением.
+			out.push(
+				'  ' +
+					palette.accent('▌') +
+					palette.accent('▸') +
+					palette.surface(' ' + padEnd(body, inner - 1), { bg: true }),
+			)
+		} else {
+			out.push('  ' + palette.faint(GUTTER.line) + '  ' + body)
+		}
 	}
 
-	const rest = items.length - (start + window)
-	if (rest > 0) lines.push(c.gray('    ↓ ещё ' + rest))
-	return lines
+	const rest = items.length - (start + visible)
+	if (rest > 0) out.push(line(palette.surface(`↓ ещё ${rest}`)))
+
+	return out
+}
+
+function footer(screen) {
+	const keys = [key('↑↓') + palette.faint(' выбор'), key('⏎') + palette.faint(' открыть')]
+	if (stack.length > 1) keys.push(key('esc') + palette.faint(' назад'))
+	keys.push(key('q') + palette.faint(' выход'))
+
+	const out = [line()]
+	if (screen.hint) out.push(line(palette.surface(screen.hint)))
+	out.push('  ' + palette.faint(GUTTER.end) + '  ' + keys.join('   '))
+	return out
 }
 
 function render() {
 	const screen = stack[stack.length - 1]
-	const items = screen.items
 
 	const out = [...header()]
+	out.push(line())
 	if (screen.title) {
-		out.push('  ' + c.bold(screen.title))
-		out.push('')
+		out.push(row(GUTTER.node, c.bold(palette.ink(screen.title))))
+		out.push(line())
 	}
 
-	const used = out.length + 4
-	const height = Math.max(5, (process.stdout.rows ?? 24) - used - 3)
-	out.push(...renderList(items, selected, height))
+	const used = out.length + 5
+	const height = Math.max(5, (process.stdout.rows ?? 24) - used - 2)
+	out.push(...renderList(screen.items, selected, height))
 	out.push(...footer(screen))
 
-	if (message) {
-		out.push('')
-		out.push('  ' + message)
-	}
+	if (message) out.push('  ' + message)
+	out.push('')
 
-	process.stdout.write(CLEAR + HIDE + out.join('\n') + '\n')
+	process.stdout.write(CLEAR + HIDE + out.join('\n'))
 }
 
 // ── запуск внешних команд ──────────────────────────────────────────────
@@ -122,9 +168,9 @@ let busy = false
 
 function waitForKey() {
 	return new Promise(resolve => {
-		const onKey = (_char, key) => {
+		const onKey = (_char, pressed) => {
 			process.stdin.off('keypress', onKey)
-			if (key?.ctrl && key.name === 'c') quit()
+			if (pressed?.ctrl && pressed.name === 'c') quit()
 			resolve()
 		}
 		process.stdin.on('keypress', onKey)
@@ -143,27 +189,24 @@ async function run(args, { pause = false } = {}) {
 	process.stdin.resume()
 
 	if (pause) {
-		process.stdout.write('\n' + c.gray('  любая клавиша — назад в меню '))
+		process.stdout.write('\n  ' + key('любая клавиша') + palette.faint(' — назад в меню '))
 		await waitForKey()
 	}
 
-	// Файлы могли измениться: пак решён, задача сброшена, прогресс пересчитан.
+	// Файлы могли измениться: задача решена, пак сброшен, прогресс пересчитан.
 	packs = loadPacks()
 	progress = readProgress()
 	busy = false
 }
 
-const script = name => [path.join(ROOT, 'scripts', name)]
+const runScript = (name, extra = []) =>
+	run([path.join(ROOT, 'scripts', name), ...extra], { pause: true })
 
-function runYarn(scriptName, extra = []) {
-	return run([...script(scriptName), ...extra], { pause: true })
-}
+// ── навигация по экранам ───────────────────────────────────────────────
 
-// ── экраны ─────────────────────────────────────────────────────────────
-
-/** Первый пункт, на который можно встать: разделители уровней пропускаем. */
+/** Первый пункт, на который можно встать: разделители пропускаем. */
 function firstSelectable(screen) {
-	const index = screen.items.findIndex(item => !item.separator)
+	const index = screen.items.findIndex(entry => !entry.separator)
 	return index === -1 ? 0 : index
 }
 
@@ -184,47 +227,26 @@ function back() {
 	}
 }
 
-function taskMark(id) {
-	const state = progress?.tasks?.[id]
-	if (state === 'pass') return c.green('✔')
-	if (state === 'partial') return c.yellow('◐')
-	if (state === 'fail') return c.red('✗')
-	return c.gray('·')
-}
+// ── экраны ─────────────────────────────────────────────────────────────
+
+/** Пункт меню: название читаемым цветом, пояснение приглушённо. */
+const item = (label, about, action) => ({
+	label: palette.ink(label) + (about ? palette.surface('  ' + about) : ''),
+	action,
+})
 
 function mainScreen() {
 	return {
 		title: null,
-		hint: 'первая нерешённая ищется сама — по порядку от лёгких паков к сложным',
+		hint: 'нерешённая ищется сама — от лёгких паков к сложным',
 		items: [
-			{
-				label: 'Решать дальше' + c.gray('  — открыть первую нерешённую'),
-				action: () => runYarn('solve.mjs'),
-			},
-			{
-				label: 'Выбрать пак и задачу',
-				action: () => push(packsScreen()),
-			},
-			{
-				label: 'Прогресс' + c.gray('  — прогнать всё и показать таблицу'),
-				action: () => runYarn('progress.mjs'),
-			},
-			{
-				label: 'Сбросить решения',
-				action: () => push(cleanScreen()),
-			},
-			{
-				label: 'Проверки' + c.gray('  — тесты, типы, линт, формат'),
-				action: () => push(checksScreen()),
-			},
-			{
-				label: 'Все команды' + c.gray('  — шпаргалка по yarn'),
-				action: () => push(helpScreen()),
-			},
-			{
-				label: c.gray('Выход'),
-				action: () => quit(),
-			},
+			item('Решать дальше', 'первая нерешённая задача', () => runScript('solve.mjs')),
+			item('Выбрать пак и задачу', '', () => push(packsScreen())),
+			item('Прогресс', 'прогнать всё и показать таблицу', () => runScript('progress.mjs')),
+			item('Сбросить решения', '', () => push(cleanScreen())),
+			item('Проверки', 'тесты, типы, линт', () => push(checksScreen())),
+			item('Все команды', 'шпаргалка по yarn', () => push(helpScreen())),
+			{ label: palette.surface('Выход'), action: () => quit() },
 		],
 	}
 }
@@ -236,62 +258,67 @@ function packsScreen() {
 	for (const pack of packs) {
 		if (pack.level !== currentLevel) {
 			currentLevel = pack.level
-			items.push({ separator: true, label: c.gray(`── уровень ${currentLevel} ` + '─'.repeat(40)) })
+			items.push({ separator: true, label: `уровень ${currentLevel}` })
 		}
+
 		const total = pack.tasks.size
 		const done = [...pack.tasks.keys()].filter(id => progress?.tasks?.[id] === 'pass').length
+
 		items.push({
-			label: c.cyan(padEnd(pack.code, 6)) + padEnd(pack.title, 24),
-			right: bar(done, total, 14) + ' ' + c.gray(`${done}/${total}`),
+			label: palette.accent(padEnd(pack.code, 6)) + palette.ink(padEnd(pack.title, 25)),
+			right: bar(done, total, 12) + ' ' + palette.faint(padEnd(`${done}/${total}`, 6)),
 			action: () => push(tasksScreen(pack)),
 		})
 	}
 
-	return { title: 'ПАКИ', hint: 'слева код пака, справа сколько задач сдано', items }
+	return { title: 'ПАКИ', hint: '● сдано   ◐ частично   ○ нет', items }
 }
 
 function tasksScreen(pack) {
 	const items = [...pack.tasks.values()].map(task => ({
-		label: `${taskMark(task.id)} ${c.cyan(padEnd(task.id, 9))}${padEnd(task.stars || '', 5)}${task.title}`,
+		label:
+			taskMark(task.id) +
+			'  ' +
+			palette.accent(padEnd(task.id, 9)) +
+			stars(task.stars) +
+			padEnd('', 5 - (task.stars?.length ?? 0)) +
+			palette.ink(task.title),
 		action: () => push(taskScreen(pack, task)),
 	}))
 
 	return {
-		title: `${pack.code} · ${pack.title}` + c.gray(`  — ${pack.subtitle}`),
-		hint: `${pack.why ?? ''}`.slice(0, 68),
+		title: `${pack.code} · ${pack.title}`,
+		hint: `${pack.subtitle}  ·  норматив ~${pack.norm} мин`,
 		items,
 	}
 }
 
 function taskScreen(pack, task) {
+	const file = path
+		.relative(ROOT, task.file ?? pack.tasksFile)
+		.split(path.sep)
+		.join('/')
+
 	return {
-		title: `${task.id} · ${task.title} ${c.gray(task.stars)}`,
-		hint: path
-			.relative(ROOT, task.file ?? pack.tasksFile)
-			.split(path.sep)
-			.join('/'),
+		title: `${task.id} · ${task.title}  ${stars(task.stars)}`,
+		hint: file,
 		items: [
+			item('Решать', 'открыть в редакторе и гонять её тесты', () =>
+				runScript('solve.mjs', [task.id]),
+			),
+			item('Карточка в буфер', 'вставить в claude.ai', () =>
+				runScript('task.mjs', [task.id, '-c']),
+			),
+			item('Показать условие и тесты', '', () => runScript('task.mjs', [task.id])),
 			{
-				label: 'Решать' + c.gray('  — открыть в редакторе и гонять её тесты'),
-				action: () => runYarn('solve.mjs', [task.id]),
+				label: palette.ink('Эталонное решение') + palette.rose('  только после своей попытки'),
+				action: () => runScript('task.mjs', [task.id, '-s']),
 			},
 			{
-				label: 'Карточка в буфер' + c.gray('  — вставить в claude.ai'),
-				action: () => runYarn('task.mjs', [task.id, '-c']),
+				label: palette.amber('Сбросить эту задачу'),
+				action: () => runScript('clean.mjs', [task.id, '-y']),
 			},
-			{
-				label: 'Показать условие и тесты',
-				action: () => runYarn('task.mjs', [task.id]),
-			},
-			{
-				label: 'Эталонное решение' + c.red('  — только после своей попытки'),
-				action: () => runYarn('task.mjs', [task.id, '-s']),
-			},
-			{
-				label: c.yellow('Сбросить эту задачу'),
-				action: () => runYarn('clean.mjs', [task.id, '-y']),
-			},
-			{ label: c.gray('Назад'), action: () => back() },
+			{ label: palette.surface('Назад'), action: () => back() },
 		],
 	}
 }
@@ -301,126 +328,132 @@ function cleanScreen() {
 
 	return {
 		title: 'СБРОС РЕШЕНИЙ',
-		hint: 'возвращает файлы к исходным заготовкам — решения стираются',
+		hint: 'возвращает файлы к заготовкам — решения стираются',
 		items: [
+			item('Показать, что тронуто', 'ничего не меняет', () => runScript('clean.mjs')),
+			item('Выбрать пак', '', () =>
+				push({
+					title: 'СБРОСИТЬ ПАК',
+					hint: 'подтверждение спросят перед удалением',
+					items: packs.map(pack => ({
+						label: palette.accent(padEnd(pack.code, 6)) + palette.ink(pack.title),
+						action: () => runScript('clean.mjs', [pack.code]),
+					})),
+				}),
+			),
+			item('Выбрать уровень', '', () =>
+				push({
+					title: 'СБРОСИТЬ УРОВЕНЬ',
+					items: levels.map(level => ({
+						label:
+							palette.accent(padEnd(`уровень ${level}`, 14)) +
+							palette.surface(`${packs.filter(pack => pack.level === level).length} паков`),
+						action: () => runScript('clean.mjs', ['--level', String(level)]),
+					})),
+				}),
+			),
+			item('Только зачтённые задачи', '', () => runScript('clean.mjs', ['--done'])),
 			{
-				label: 'Показать, что тронуто' + c.gray('  — ничего не меняет'),
-				action: () => runYarn('clean.mjs'),
+				label: palette.rose('Сбросить весь тренажёр'),
+				action: () => runScript('clean.mjs', ['--all']),
 			},
 			{
-				label: 'Выбрать пак',
-				action: () =>
-					push({
-						title: 'СБРОСИТЬ ПАК',
-						hint: 'подтверждение спросят перед удалением',
-						items: packs.map(pack => ({
-							label: c.cyan(padEnd(pack.code, 6)) + pack.title,
-							action: () => runYarn('clean.mjs', [pack.code]),
-						})),
-					}),
+				label: palette.surface('Пересобрать эталоны (stubs.json)'),
+				action: () => runScript('clean.mjs', ['--snapshot']),
 			},
-			{
-				label: 'Выбрать уровень',
-				action: () =>
-					push({
-						title: 'СБРОСИТЬ УРОВЕНЬ',
-						items: levels.map(level => ({
-							label:
-								`уровень ${level}` +
-								c.gray(`  — ${packs.filter(p => p.level === level).length} паков`),
-							action: () => runYarn('clean.mjs', ['--level', String(level)]),
-						})),
-					}),
-			},
-			{
-				label: 'Только зачтённые задачи',
-				action: () => runYarn('clean.mjs', ['--done']),
-			},
-			{
-				label: c.red('Сбросить весь тренажёр'),
-				action: () => runYarn('clean.mjs', ['--all']),
-			},
-			{
-				label: c.gray('Пересобрать эталоны (stubs.json)'),
-				action: () => runYarn('clean.mjs', ['--snapshot']),
-			},
-			{ label: c.gray('Назад'), action: () => back() },
+			{ label: palette.surface('Назад'), action: () => back() },
 		],
 	}
 }
 
 function checksScreen() {
-	const bin = name => path.join(ROOT, 'node_modules', name)
+	const bin = (...parts) => path.join(ROOT, 'node_modules', ...parts)
 
 	return {
 		title: 'ПРОВЕРКИ',
+		hint: 'запускается отдельной командой, Ctrl+C возвращает сюда',
 		items: [
-			{
-				label: 'Тесты один раз' + c.gray('  — yarn test'),
-				action: () => run([path.join(bin('vitest'), 'vitest.mjs'), 'run'], { pause: true }),
-			},
-			{
-				label: 'Тесты в watch' + c.gray('  — yarn t'),
-				action: () => run([path.join(bin('vitest'), 'vitest.mjs'), '--hideSkippedTests']),
-			},
-			{
-				label: 'Типы' + c.gray('  — yarn typecheck'),
-				action: () =>
-					run([path.join(bin('typescript'), 'bin', 'tsc'), '-p', 'tsconfig.app.json'], {
-						pause: true,
-					}),
-			},
-			{
-				label: 'Эталоны целы' + c.gray('  — yarn verify'),
-				action: () => runYarn('verify-types.mjs'),
-			},
-			{
-				label: 'Линт' + c.gray('  — yarn lint'),
-				action: () => run([path.join(bin('eslint'), 'bin', 'eslint.js'), '.'], { pause: true }),
-			},
-			{ label: c.gray('Назад'), action: () => back() },
+			item('Тесты один раз', 'yarn test', () =>
+				run([bin('vitest', 'vitest.mjs'), 'run'], { pause: true }),
+			),
+			item('Тесты в watch', 'yarn t', () =>
+				run([bin('vitest', 'vitest.mjs'), '--hideSkippedTests']),
+			),
+			item('Типы', 'yarn typecheck', () =>
+				run([bin('typescript', 'bin', 'tsc'), '-p', 'tsconfig.app.json'], { pause: true }),
+			),
+			item('Эталоны целы', 'yarn verify', () => runScript('verify-types.mjs')),
+			item('Линт', 'yarn lint', () =>
+				run([bin('eslint', 'bin', 'eslint.js'), '.'], { pause: true }),
+			),
+			{ label: palette.surface('Назад'), action: () => back() },
 		],
 	}
 }
 
 function helpScreen() {
-	const rows = [
-		['yarn menu', 'это меню'],
-		['yarn solve', 'первая нерешённая задача'],
-		['yarn solve BAS-07', 'конкретная задача'],
-		['yarn solve BAS', 'первая нерешённая в паке'],
-		['yarn task', 'список паков'],
-		['yarn task BAS', 'список задач пака'],
-		['yarn task BAS-07 -c', 'карточка задачи в буфер'],
-		['yarn task BAS-07 -s', 'карточка вместе с эталоном'],
-		['yarn progress', 'прогнать всё и показать таблицу'],
-		['yarn progress BAS', 'то же, но с разбивкой по задачам пака'],
-		['yarn clean', 'что тронуто относительно заготовок'],
-		['yarn clean BAS-07', 'сбросить одну задачу'],
-		['yarn clean BAS', 'сбросить пак'],
-		['yarn clean --level 1', 'сбросить все паки уровня'],
-		['yarn clean --done', 'сбросить только зачтённые'],
-		['yarn clean --all', 'сбросить всё'],
-		['yarn t', 'тесты в watch'],
-		['yarn test', 'тесты один раз'],
-		['yarn typecheck', 'проверка типов'],
-		['yarn verify', 'эталоны и типы целы'],
-		['yarn lint', 'eslint'],
+	const groups = [
+		[
+			'решать',
+			[
+				['yarn menu', 'это меню'],
+				['yarn solve', 'первая нерешённая задача'],
+				['yarn solve BAS-07', 'конкретная задача'],
+				['yarn solve BAS', 'первая нерешённая в паке'],
+			],
+		],
+		[
+			'смотреть',
+			[
+				['yarn task', 'список паков'],
+				['yarn task BAS', 'список задач пака'],
+				['yarn task BAS-07 -c', 'карточка задачи в буфер'],
+				['yarn task BAS-07 -s', 'карточка вместе с эталоном'],
+				['yarn progress', 'прогнать всё и показать таблицу'],
+				['yarn progress BAS', 'то же с разбивкой по задачам'],
+			],
+		],
+		[
+			'сбрасывать',
+			[
+				['yarn clean', 'что тронуто относительно заготовок'],
+				['yarn clean BAS-07', 'сбросить одну задачу'],
+				['yarn clean BAS', 'сбросить пак'],
+				['yarn clean --level 1', 'сбросить все паки уровня'],
+				['yarn clean --done', 'сбросить только зачтённые'],
+				['yarn clean --all', 'сбросить всё'],
+			],
+		],
+		[
+			'проверять',
+			[
+				['yarn t', 'тесты в watch'],
+				['yarn test', 'тесты один раз'],
+				['yarn typecheck', 'проверка типов'],
+				['yarn verify', 'эталоны и типы целы'],
+				['yarn lint', 'eslint'],
+				['yarn format', 'прогнать prettier по репозиторию'],
+			],
+		],
 	]
 
-	const width = Math.max(...rows.map(row => row[0].length)) + 3
+	const pad = Math.max(...groups.flatMap(([, rows]) => rows).map(([command]) => command.length)) + 3
 
-	return {
-		title: 'ВСЕ КОМАНДЫ',
-		hint: 'Enter на строке — скопировать команду в буфер',
-		items: rows.map(([command, about]) => ({
-			label: c.cyan(padEnd(command, width)) + c.gray(about),
-			action: () => {
-				copy(command)
-				message = c.green(`скопировано: ${command}`)
-			},
-		})),
+	const items = []
+	for (const [group, rows] of groups) {
+		items.push({ separator: true, label: group })
+		for (const [command, about] of rows) {
+			items.push({
+				label: palette.accent(padEnd(command, pad)) + palette.surface(about),
+				action: () => {
+					copy(command)
+					message = palette.mint('✓ скопировано: ') + palette.faint(command)
+				},
+			})
+		}
 	}
+
+	return { title: 'ВСЕ КОМАНДЫ', hint: 'Enter копирует команду в буфер обмена', items }
 }
 
 function copy(text) {
@@ -444,11 +477,13 @@ function copy(text) {
 
 function quit() {
 	process.stdout.write(SHOW + CLEAR)
-	console.log(c.gray('  Пока. Возвращайся: ') + c.cyan('yarn menu') + '\n')
+	console.log('')
+	console.log(row(GUTTER.end, palette.faint('вернуться: ') + palette.accent('yarn menu')))
+	console.log('')
 	process.exit(0)
 }
 
-/** Пропускаем разделители уровней — на них нельзя встать курсором. */
+/** Пропускаем разделители — на них нельзя встать курсором. */
 function step(direction) {
 	const items = stack[stack.length - 1].items
 	let next = selected
@@ -460,21 +495,21 @@ function step(direction) {
 }
 
 async function activate() {
-	const item = stack[stack.length - 1].items[selected]
-	if (!item || item.separator) return
+	const current = stack[stack.length - 1].items[selected]
+	if (!current || current.separator) return
 	message = ''
-	await item.action()
+	await current.action()
 }
 
 readline.emitKeypressEvents(process.stdin)
 process.stdin.setRawMode(true)
 process.stdin.resume()
 
-process.stdin.on('keypress', async (_char, key) => {
-	if (!key || busy) return
-	if (key.ctrl && key.name === 'c') return quit()
+process.stdin.on('keypress', async (_char, pressed) => {
+	if (!pressed || busy) return
+	if (pressed.ctrl && pressed.name === 'c') return quit()
 
-	switch (key.name) {
+	switch (pressed.name) {
 		case 'up':
 		case 'k':
 			step(-1)
@@ -495,8 +530,7 @@ process.stdin.on('keypress', async (_char, key) => {
 		case 'q':
 			return quit()
 		case 'home':
-			selected = 0
-			if (stack[stack.length - 1].items[0]?.separator) step(1)
+			selected = firstSelectable(stack[stack.length - 1])
 			break
 		case 'end':
 			selected = stack[stack.length - 1].items.length - 1
@@ -508,6 +542,7 @@ process.stdin.on('keypress', async (_char, key) => {
 })
 
 process.on('exit', () => process.stdout.write(SHOW))
+process.stdout.on('resize', () => !busy && render())
 
 push(mainScreen())
 render()

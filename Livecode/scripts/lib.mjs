@@ -6,23 +6,85 @@ export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const DRILLS = path.join(ROOT, 'src', 'drills')
 export const PROGRESS_FILE = path.join(ROOT, '.progress.json')
 
-const useColor = process.env.NO_COLOR === undefined && process.env.TERM !== 'dumb'
-const wrap = (open, close) => s => (useColor ? `[${open}m${s}[${close}m` : String(s))
+/**
+ * Цвет. NO_COLOR выключает, FORCE_COLOR включает принудительно.
+ * Глубина определяется один раз: 24 бита там, где терминал это заявляет,
+ * иначе 8-битная палитра, иначе базовые 16 цветов.
+ */
+const forced = process.env.FORCE_COLOR !== undefined
+const useColor = forced || (process.env.NO_COLOR === undefined && process.env.TERM !== 'dumb')
+
+const depth = (() => {
+	if (!useColor) return 0
+	const term = process.env.TERM ?? ''
+	const colorterm = process.env.COLORTERM ?? ''
+	if (/truecolor|24bit/i.test(colorterm)) return 24
+	// Windows Terminal и современный conhost умеют 24 бита, но COLORTERM не выставляют.
+	if (process.platform === 'win32') return 24
+	if (/256|kitty|alacritty/i.test(term)) return 8
+	return 4
+})()
+
+const ESC = '\x1b['
+const wrap = (open, close) => s => (useColor ? `${ESC}${open}m${s}${ESC}${close}m` : String(s))
+
+/** Приблизить произвольный RGB к ближайшему из 16 базовых цветов. */
+function basic(r, g, b) {
+	const bright = Math.max(r, g, b) > 160 ? 60 : 0
+	const code = (r > 110 ? 1 : 0) | (g > 110 ? 2 : 0) | (b > 110 ? 4 : 0)
+	return 30 + code + bright
+}
+
+/** Цвет по RGB с деградацией под возможности терминала. */
+export const rgb =
+	(r, g, b) =>
+	(text, { bg = false } = {}) => {
+		if (!useColor) return String(text)
+		const layer = bg ? 48 : 38
+		const reset = bg ? 49 : 39
+		if (depth === 24) return `${ESC}${layer};2;${r};${g};${b}m${text}${ESC}${reset}m`
+		if (depth === 8) {
+			const level = v => Math.round((Math.max(0, Math.min(255, v)) / 255) * 5)
+			const index = 16 + 36 * level(r) + 6 * level(g) + level(b)
+			return `${ESC}${layer};5;${index}m${text}${ESC}${reset}m`
+		}
+		return `${ESC}${basic(r, g, b) + (bg ? 10 : 0)}m${text}${ESC}${reset}m`
+	}
+
+/** Палитра тренажёра: холодный акцент, тёплые статусы. */
+export const palette = {
+	accent: rgb(96, 165, 250),
+	sky: rgb(56, 189, 248),
+	mint: rgb(52, 211, 153),
+	amber: rgb(251, 191, 36),
+	rose: rgb(248, 113, 113),
+	violet: rgb(167, 139, 250),
+	ink: rgb(148, 163, 184),
+	faint: rgb(100, 116, 139),
+	surface: rgb(38, 50, 70),
+}
 
 export const c = {
 	bold: wrap(1, 22),
 	dim: wrap(2, 22),
-	red: wrap(31, 39),
-	green: wrap(32, 39),
-	yellow: wrap(33, 39),
-	blue: wrap(34, 39),
-	magenta: wrap(35, 39),
-	cyan: wrap(36, 39),
-	gray: wrap(90, 39),
+	italic: wrap(3, 23),
+	inverse: wrap(7, 27),
+	red: palette.rose,
+	green: palette.mint,
+	yellow: palette.amber,
+	blue: palette.accent,
+	magenta: palette.violet,
+	cyan: palette.accent,
+	gray: palette.faint,
+	ink: palette.ink,
+	/** Подложка выделенной строки. */
+	on: text => palette.surface(text, { bg: true }),
 }
 
-/** Ширина строки без ANSI-последовательностей. */
-export const visibleWidth = s => s.replace(/\[\d+m/g, '').length
+/** Строка без ANSI-последовательностей: нужна и для замера, и для выравнивания. */
+export const strip = s => String(s).replace(/\x1b\[[0-9;]*m/g, '')
+
+export const visibleWidth = s => strip(s).length
 
 export const padEnd = (s, width) => s + ' '.repeat(Math.max(0, width - visibleWidth(s)))
 
@@ -152,10 +214,43 @@ export function readProgress() {
 	}
 }
 
-/** Полоска прогресса из блочных символов. */
+/**
+ * Полоска прогресса с градиентом: от розового к мятному по мере заполнения.
+ * Последний символ — дробный, поэтому движение видно и на одной решённой задаче.
+ */
 export function bar(done, total, width = 24) {
-	if (total === 0) return c.gray('─'.repeat(width))
-	const filled = Math.round((done / total) * width)
-	const color = done === total ? c.green : done === 0 ? c.gray : c.yellow
-	return color('█'.repeat(filled)) + c.gray('░'.repeat(width - filled))
+	if (total === 0) return palette.surface('─'.repeat(width))
+
+	const ratio = Math.max(0, Math.min(1, done / total))
+	const exact = ratio * width
+	const full = Math.floor(exact)
+	const remainder = exact - full
+
+	// Градиент по позиции: начало полосы холоднее, конец — цвет завершения.
+	const mix = (from, to, t) => Math.round(from + (to - from) * t)
+	const head = [244, 114, 182]
+	const tail = done === total ? [52, 211, 153] : [96, 165, 250]
+
+	let out = ''
+	for (let index = 0; index < full; index += 1) {
+		const t = width === 1 ? 1 : index / (width - 1)
+		out += rgb(mix(head[0], tail[0], t), mix(head[1], tail[1], t), mix(head[2], tail[2], t))('█')
+	}
+
+	let rest = width - full
+	if (remainder > 0.15 && rest > 0) {
+		const partial = remainder > 0.6 ? '▓' : remainder > 0.35 ? '▒' : '░'
+		const t = width === 1 ? 1 : full / (width - 1)
+		out += rgb(
+			mix(head[0], tail[0], t),
+			mix(head[1], tail[1], t),
+			mix(head[2], tail[2], t),
+		)(partial)
+		rest -= 1
+	}
+
+	return out + palette.surface('░'.repeat(Math.max(0, rest)))
 }
+
+/** Процент в компактном виде: 0%, 7%, 100%. */
+export const percentOf = (done, total) => (total === 0 ? 0 : Math.round((done / total) * 100))

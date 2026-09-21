@@ -15,8 +15,9 @@
  */
 import { spawn } from 'node:child_process'
 import path from 'node:path'
-import { c, findPack, findTask, loadPacks, ROOT } from './lib.mjs'
+import { c, findPack, findTask, loadPacks, palette, ROOT } from './lib.mjs'
 import { ensureState, firstUnsolved, isStale } from './state.mjs'
+import { code, end, key, line, node, stars, top } from './ui.mjs'
 
 const argv = process.argv.slice(2)
 const flags = new Set(argv.filter(a => a.startsWith('-')))
@@ -32,18 +33,24 @@ if (packs.length === 0) {
 /** Первая несданная задача — по всему тренажёру или внутри одного пака. */
 function pickUnsolved(scope) {
 	const list = scope ? [scope] : packs
-	const stale = force || isStale(list)
-	if (stale) console.log(c.gray('  прогресс устарел, перепроверяю...'))
+	if (force || isStale(list)) {
+		console.log('')
+		console.log(line(palette.amber('⟳ ') + palette.faint('прогресс устарел, перепроверяю...')))
+	}
 
 	const { state } = ensureState(list, { force })
 	const found = firstUnsolved(list, state)
 
 	if (!found) {
+		console.log('')
 		console.log(
-			scope
-				? c.green(`  Пак ${scope.code} сдан полностью. Возьми следующий: yarn task`)
-				: c.green('  Всё решено. Можешь идти на собес.'),
+			end(
+				scope
+					? palette.mint(`Пак ${scope.code} сдан полностью.`) + palette.faint('  дальше: yarn task')
+					: palette.mint('Всё решено. Можешь идти на собес.'),
+			),
 		)
+		console.log('')
 		process.exit(0)
 	}
 	return found
@@ -55,7 +62,7 @@ function condition(body) {
 	if (!doc) return ''
 	return doc[1]
 		.split('\n')
-		.map(line => line.replace(/^\s*\*\s?/, ''))
+		.map(entry => entry.replace(/^\s*\*\s?/, ''))
 		.join('\n')
 		.trim()
 }
@@ -65,17 +72,16 @@ function signature(body) {
 	return body
 		.replace(/\/\*\*[\s\S]*?\*\//, '')
 		.split('\n')
-		.filter(line => line.trim() && !line.trim().startsWith('//'))
+		.filter(entry => entry.trim() && !entry.trim().startsWith('//'))
 		.join('\n')
 		.trim()
 }
 
 /** Тело describe без самой обёртки — остаются только проверки. */
 function checks(body) {
-	const lines = body.split('\n')
-	const inner = lines.slice(1, -1)
+	const inner = body.split('\n').slice(1, -1)
 	return inner
-		.map(line => line.replace(/^\t/, ''))
+		.map(entry => entry.replace(/^\t/, ''))
 		.join('\n')
 		.trim()
 }
@@ -100,41 +106,53 @@ if (!query) {
 }
 
 if (!found) {
-	console.log(c.red(`Не нашла задачу «${query}». Список: yarn task`))
+	console.log('')
+	console.log(
+		end(palette.rose(`Не нашла задачу «${query}».`) + palette.faint('  список: yarn task')),
+	)
+	console.log('')
 	process.exit(1)
 }
 
 const { pack, task } = found
 const file = task.file ?? pack.tasksFile
-const relative = path.relative(ROOT, file).replace(/\\/g, '/')
+const relative = path.relative(ROOT, file).split(path.sep).join('/')
 const test = pack.tests.get(task.id)
 
-console.log()
-if (auto) console.log(c.gray('  следующая нерешённая:'))
-console.log(`  ${c.bold(task.id)} · ${c.bold(task.title)} ${c.gray(task.stars)}`)
-console.log(c.gray(`  ${relative}  ·  пак ${pack.code}, норматив ~${pack.norm} мин на весь пак`))
+const out = ['']
+out.push(top(task.id, auto ? 'следующая нерешённая' : `пак ${pack.code}`))
+out.push(line(c.bold(palette.ink(task.title)) + '  ' + stars(task.stars)))
+out.push(line(palette.surface(`${relative}  ·  норматив ~${pack.norm} мин на весь пак`)))
+out.push(line())
 
-console.log()
-console.log(c.cyan('  ЧТО НАДО СДЕЛАТЬ'))
-for (const line of condition(task.body).split('\n')) console.log('  ' + line)
+out.push(node('ЧТО НАДО СДЕЛАТЬ'))
+out.push(line())
+for (const entry of condition(task.body).split('\n')) out.push(line(palette.ink(entry)))
+out.push(line())
 
-console.log()
-console.log(c.cyan('  ЗАПОЛНИТЬ'))
-for (const line of signature(task.body).split('\n')) console.log(c.gray('  ' + line))
+out.push(node('ЗАПОЛНИТЬ'))
+out.push(line())
+out.push(...code(signature(task.body)))
+out.push(line())
 
 if (test) {
-	console.log()
-	console.log(c.cyan('  ПРИЁМКА') + c.gray('  — эти проверки должны стать зелёными'))
-	for (const line of checks(test.body).split('\n')) console.log(c.gray('  ' + line))
+	out.push(node('ПРИЁМКА'))
+	out.push(line(palette.surface('эти проверки должны стать зелёными')))
+	out.push(line())
+	out.push(...code(checks(test.body)))
+	out.push(line())
 }
 
-console.log()
-console.log(
-	c.gray(`  застрял  → yarn task ${task.id} -c   (карточка в буфер, вставить в claude.ai)`),
+out.push(
+	line(
+		key('yarn task ' + task.id + ' -c') + palette.faint('  карточка в буфер, вставить в claude.ai'),
+	),
 )
-console.log(c.gray(`  сбросить → yarn clean ${task.id}`))
-console.log(c.gray('  выйти    → Ctrl+C'))
-console.log()
+out.push(line(key('yarn clean ' + task.id) + palette.faint('  сбросить задачу к заготовке')))
+out.push(end(key('Ctrl+C') + palette.faint('  выйти')))
+out.push('')
+
+console.log(out.join('\n'))
 
 // Открываем файл в редакторе на строке с заготовкой. Нет `code` в PATH — просто пропускаем.
 // На Windows code — это .cmd, а node с 20.12 отказывается спавнить .cmd без shell и кидает
@@ -142,7 +160,7 @@ console.log()
 if (!flags.has('-n') && !flags.has('--no-open')) {
 	const win = process.platform === 'win32'
 	const target = `${file}:${task.startLine + 1}`
-	const miss = () => console.log(c.yellow('  (VS Code не найден в PATH — открой файл сам)'))
+	const miss = () => console.log(line(palette.amber('VS Code не найден в PATH — открой файл сам')))
 	try {
 		const editor = win
 			? spawn('code.cmd', ['-g', `"${target}"`], {
@@ -167,4 +185,4 @@ const child = spawn(
 	{ cwd: ROOT, stdio: 'inherit' },
 )
 
-child.on('exit', code => process.exit(code ?? 0))
+child.on('exit', status => process.exit(status ?? 0))

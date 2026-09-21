@@ -20,7 +20,8 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline/promises'
-import { c, findPack, findTask, loadPacks, padEnd, readProgress, ROOT } from './lib.mjs'
+import { c, findPack, findTask, loadPacks, padEnd, palette, readProgress, ROOT } from './lib.mjs'
+import { columns, end, GUTTER, key, line, node, row, top } from './ui.mjs'
 
 const STUBS = path.join(ROOT, 'stubs.json')
 
@@ -191,9 +192,9 @@ function selectTasks(packs, args, flags, stubs) {
 
 function overview(packs, stubs) {
 	const progress = readProgress()
-	console.log()
-	console.log(c.bold('  ЧТО МОЖНО СБРОСИТЬ') + c.gray('   (изменённые относительно заготовки)'))
-	console.log(c.gray('  ' + '─'.repeat(70)))
+	const out = ['']
+	out.push(top('СБРОС', 'изменённые относительно заготовки'))
+	out.push(line())
 
 	let total = 0
 	for (const pack of packs) {
@@ -203,34 +204,50 @@ function overview(packs, stubs) {
 		if (dirty.length === 0) continue
 		total += dirty.length
 		const done = dirty.filter(task => progress?.tasks?.[task.id] === 'pass').length
-		console.log(
-			`  ${c.cyan(padEnd(pack.code, 6))}${padEnd(pack.title, 24)}${padEnd(`${dirty.length} тронуто`, 14)}${c.gray(`из них сдано ${done}`)}`,
+		out.push(
+			line(
+				palette.accent(padEnd(pack.code, 6)) +
+					palette.ink(padEnd(pack.title, 26)) +
+					palette.amber(padEnd(`${dirty.length} тронуто`, 14)) +
+					palette.surface(`сдано ${done}`),
+			),
 		)
 	}
 
-	console.log(c.gray('  ' + '─'.repeat(70)))
+	out.push(line())
 	if (total === 0) {
-		console.log(c.green('  Всё совпадает с заготовками — сбрасывать нечего.'))
+		out.push(node(palette.mint('Всё совпадает с заготовками — сбрасывать нечего.')))
 	} else {
-		console.log(`  Всего тронуто: ${c.bold(String(total))}`)
+		out.push(node(`Всего тронуто: ${c.bold(palette.ink(String(total)))}`))
 	}
-	console.log()
-	console.log(c.gray('  yarn clean BAS-07      одна задача'))
-	console.log(c.gray('  yarn clean BAS         весь пак'))
-	console.log(c.gray('  yarn clean --level 1   все паки уровня'))
-	console.log(c.gray('  yarn clean --done      только зачтённые'))
-	console.log(c.gray('  yarn clean --all       всё разом'))
-	console.log()
+
+	out.push(line())
+	out.push(
+		...columns([
+			['yarn clean BAS-07', 'одна задача'],
+			['yarn clean BAS', 'весь пак'],
+			['yarn clean --level 1', 'все паки уровня'],
+			['yarn clean --done', 'только зачтённые'],
+			['yarn clean --all', 'всё разом'],
+		]),
+	)
+	out.push(end(palette.surface('добавь --dry, чтобы только посмотреть')))
+	out.push('')
+
+	console.log(out.join('\n'))
 }
 
 async function confirm(count) {
 	if (!process.stdin.isTTY) {
-		console.log(c.yellow('  Неинтерактивный запуск — добавь -y, если точно надо.'))
+		console.log(line(palette.amber('Неинтерактивный запуск — добавь -y, если точно надо.')))
 		return false
 	}
 	const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 	const answer = await rl.question(
-		c.yellow(`  Сбросить ${count} задач(и)? Решения будут стёрты. [y/N] `),
+		row(
+			GUTTER.node,
+			palette.amber(`Сбросить ${count} задач(и)? Решения будут стёрты. `) + key('y / N') + ' ',
+		),
 	)
 	rl.close()
 	return /^(y|yes|д|да)$/i.test(answer.trim())
@@ -263,8 +280,10 @@ async function main() {
 
 	const stubs = readStubs()
 	if (!stubs) {
-		console.log(c.red('  Нет stubs.json — заготовки неизвестны.'))
-		console.log(c.gray('  Собери их один раз: yarn clean --snapshot'))
+		console.log('')
+		console.log(line(palette.rose('Нет stubs.json — заготовки неизвестны.')))
+		console.log(end(key('yarn clean --snapshot') + palette.faint('  собрать их один раз')))
+		console.log('')
 		process.exit(1)
 	}
 
@@ -275,26 +294,38 @@ async function main() {
 	const chosen = selectTasks(packs, args, flags, stubs)
 
 	if (chosen.length === 0) {
-		console.log(c.green('  Нечего сбрасывать — выбранные задачи уже в исходном виде.'))
+		console.log('')
+		console.log(end(palette.mint('Нечего сбрасывать — выбранные задачи уже в исходном виде.')))
+		console.log('')
 		return
 	}
 
-	console.log()
-	console.log(c.bold(`  Под сброс попадает ${chosen.length} задач(и):`))
+	const out = ['']
+	out.push(top('ПОД СБРОС', `${chosen.length} задач(и)`))
+	out.push(line())
 	for (const { pack, task } of chosen.slice(0, 30)) {
-		console.log(`    ${c.cyan(padEnd(task.id, 9))}${c.gray(padEnd(pack.code, 5))}${task.title}`)
+		out.push(
+			line(
+				palette.accent(padEnd(task.id, 10)) +
+					palette.surface(padEnd(pack.code, 6)) +
+					palette.ink(task.title),
+			),
+		)
 	}
-	if (chosen.length > 30) console.log(c.gray(`    ... и ещё ${chosen.length - 30}`))
-	console.log()
+	if (chosen.length > 30) out.push(line(palette.surface(`… и ещё ${chosen.length - 30}`)))
+	out.push(line())
+	console.log(out.join('\n'))
 
 	if (flags.has('--dry') || flags.has('-d')) {
-		console.log(c.gray('  --dry: файлы не тронуты.'))
+		console.log(end(palette.surface('--dry: файлы не тронуты.')))
+		console.log('')
 		return
 	}
 
 	const skipAsk = flags.has('-y') || flags.has('--yes')
 	if (!skipAsk && !(await confirm(chosen.length))) {
-		console.log(c.gray('  Отменено.'))
+		console.log(end(palette.surface('Отменено.')))
+		console.log('')
 		return
 	}
 
@@ -305,8 +336,8 @@ async function main() {
 		restored += 1
 	}
 
-	console.log(c.green(`  Сброшено: ${restored}`))
-	console.log(c.gray('  Прогресс устарел — `yarn solve` пересчитает сам.'))
+	console.log(line(palette.mint('✓ ') + palette.ink(`сброшено: ${restored}`)))
+	console.log(end(palette.surface('прогресс устарел — yarn solve пересчитает сам')))
 	console.log()
 }
 

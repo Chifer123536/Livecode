@@ -7,8 +7,9 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { bar, c, loadPacks, padEnd, ROOT } from './lib.mjs'
+import { bar, c, loadPacks, padEnd, palette, percentOf, ROOT } from './lib.mjs'
 import { computeState } from './state.mjs'
+import { end, key, line, mark, node, stars, top } from './ui.mjs'
 
 const MD = path.join(ROOT, 'PROGRESS.md')
 
@@ -28,63 +29,106 @@ function main() {
 		'',
 	]
 
-	console.log()
-	console.log(c.bold('  ПРОГРЕСС ПО ТРЕНАЖЁРУ'))
-	console.log(c.gray('  ' + '─'.repeat(82)))
+	const out = ['']
+	out.push(top('ПРОГРЕСС', 'livecode drills'))
+	out.push(line())
+
+	let currentLevel = null
 
 	for (const { pack, done, taskRows } of rows) {
 		const total = pack.tasks.size
-		console.log(
-			`  ${c.cyan(padEnd(pack.code, 5))}${padEnd(pack.title, 26)}${bar(done, total, 20)} ${c.gray(padEnd(`${done}/${total}`, 8))}`,
+
+		if (pack.level !== currentLevel) {
+			currentLevel = pack.level
+			out.push(line(palette.surface(`уровень ${currentLevel}`)))
+		}
+
+		const percent = percentOf(done, total)
+		const counter =
+			done === total
+				? palette.mint(padEnd(`${done}/${total}`, 8))
+				: palette.faint(padEnd(`${done}/${total}`, 8))
+
+		out.push(
+			line(
+				palette.accent(padEnd(pack.code, 6)) +
+					palette.ink(padEnd(pack.title, 26)) +
+					bar(done, total, 22) +
+					'  ' +
+					counter +
+					(percent === 100 ? palette.mint('✓') : ''),
+			),
 		)
 
 		if (filter && pack.code.toUpperCase() === filter) {
-			for (const { task, stats, solved, started, types } of taskRows) {
-				const mark = solved ? c.green('✔') : started ? c.yellow('◐') : c.red('✗')
-				const extra = stats && !solved ? c.gray(` (${stats.passed}/${stats.total} тестов)`) : ''
-				const typeNote = types.length ? c.red(` [типы: ${types.length}]`) : ''
-				console.log(`       ${mark} ${c.gray(padEnd(task.id, 9))}${task.title}${extra}${typeNote}`)
+			for (const { task, stats, solved, types } of taskRows) {
+				const extra =
+					stats && !solved ? palette.surface(` ${stats.passed}/${stats.total} тестов`) : ''
+				const typeNote = types.length ? palette.rose(` типы: ${types.length}`) : ''
+				out.push(
+					line(
+						'  ' +
+							mark(solved ? 'pass' : stats?.passed > 0 ? 'partial' : 'fail') +
+							'  ' +
+							palette.faint(padEnd(task.id, 9)) +
+							stars(task.stars) +
+							padEnd('', 5 - (task.stars?.length ?? 0)) +
+							palette.ink(task.title) +
+							extra +
+							typeNote,
+					),
+				)
 			}
 		}
 
 		md.push(`## ${pack.code} · ${pack.title} — ${done}/${total}`, '')
-		for (const { task, solved } of taskRows)
+		for (const { task, solved } of taskRows) {
 			md.push(`- [${solved ? 'x' : ' '}] \`${task.id}\` ${task.title} ${task.stars}`)
+		}
 		md.push('')
 	}
 
-	console.log(c.gray('  ' + '─'.repeat(82)))
-	console.log(
-		`  ${c.bold('ИТОГО')}  ${bar(grandDone, grandTotal, 40)}  ${c.bold(`${grandDone}/${grandTotal}`)} (${Math.round((grandDone / Math.max(1, grandTotal)) * 100)}%)`,
+	const percent = percentOf(grandDone, grandTotal)
+	out.push(line())
+	out.push(
+		node(
+			`ИТОГО  ${c.bold(palette.ink(String(grandDone)))}${palette.faint(`/${grandTotal}`)}  ${palette.faint(`${percent}%`)}`,
+		),
 	)
+	out.push(line(bar(grandDone, grandTotal, 46)))
 
 	if (brokenPacks.length > 0) {
-		console.log()
-		console.log(c.red(`  Файл тестов не запустился: ${brokenPacks.join(', ')}`))
-		console.log(c.gray('  Скорее всего, задача вызывается прямо при импорте. Смотри `yarn test`.'))
+		out.push(line())
+		out.push(
+			line(palette.rose('Файл тестов не запустился: ') + palette.ink(brokenPacks.join(', '))),
+		)
+		out.push(
+			line(
+				palette.surface('Скорее всего, задача вызывается прямо при импорте. Смотри `yarn test`.'),
+			),
+		)
 	}
 
-	const nextTask = rows.flatMap(r => r.taskRows).find(t => !t.solved)
+	const nextTask = rows.flatMap(entry => entry.taskRows).find(entry => !entry.solved)
+	out.push(line())
 	if (nextTask) {
-		console.log()
-		console.log(`  Следующая: ${c.cyan(nextTask.task.id)} — ${nextTask.task.title}`)
-		console.log(c.gray('  yarn solve            — открыть её и гонять только её тесты'))
-		console.log(
-			c.gray(`  yarn task ${nextTask.task.id} -c   (карточка в буфер, чтобы спросить Клода)`),
+		out.push(
+			line(
+				palette.faint('следующая  ') +
+					palette.accent(nextTask.task.id) +
+					palette.ink(`  ${nextTask.task.title}`),
+			),
 		)
+		out.push(end(key('yarn solve') + palette.faint('  открыть её и гонять только её тесты')))
 	} else {
-		console.log()
-		console.log(c.green('  Всё зелёное. Иди на собес.'))
+		out.push(end(palette.mint('Всё зелёное. Иди на собес.')))
 	}
-	console.log()
+	out.push('')
+
+	console.log(out.join('\n'))
 
 	md.unshift('')
-	md.splice(
-		5,
-		0,
-		`**Итого: ${grandDone} / ${grandTotal} (${Math.round((grandDone / Math.max(1, grandTotal)) * 100)}%)**`,
-		'',
-	)
+	md.splice(5, 0, `**Итого: ${grandDone} / ${grandTotal} (${percent}%)**`, '')
 	fs.writeFileSync(MD, md.join('\n'))
 }
 

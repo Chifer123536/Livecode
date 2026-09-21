@@ -9,13 +9,14 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { c, ROOT } from './lib.mjs'
+import { c, palette, ROOT } from './lib.mjs'
+import { end, line } from './ui.mjs'
 
 const tsconfig = path.join(ROOT, 'tsconfig.app.json')
 const tscBin = path.join(ROOT, 'node_modules', 'typescript', 'bin', 'tsc')
 
 if (!fs.existsSync(tscBin)) {
-	console.log(c.yellow('typescript не установлен — проверка типов пропущена'))
+	console.log(line(palette.amber('typescript не установлен — проверка типов пропущена')))
 	process.exit(0)
 }
 
@@ -49,4 +50,6 @@ if (inSolutions.length > 0 || elsewhere.length > 0) {
 
 const note =
 	inTasks.length > 0 ? c.gray(` (в нерешённых задачах ${inTasks.length} — так и должно быть)`) : ''
-console.log(c.green('  Типы эталонов в порядке') + note)
+console.log('')
+console.log(end(palette.mint('✓ Типы эталонов в порядке') + note))
+console.log('')
