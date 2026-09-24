@@ -1,4 +1,3 @@
-
 // #region BAS-02 | Чётное число | ★☆☆
 /**
  * Проверить, чётное ли число. Отрицательные тоже должны работать.
@@ -9,6 +8,6 @@
  *   isEven(0)  → true
  */
 export const isEven = (n: number): boolean => {
-	return n % 2 === 0
+	return n % 2 === 0 ? true : false
 }
 // #endregion

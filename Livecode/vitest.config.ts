@@ -32,8 +32,14 @@ export default defineConfig(({ mode }) => ({
 		globals: true,
 		environment: 'node',
 		setupFiles: ['./vitest.setup.ts'],
-		include: ['src/drills/**/*.test.{ts,tsx}'],
+		// Режим walkthrough сверяет разборы с эталонами и в обычный прогон не входит.
+		include:
+			mode === 'walkthrough'
+				? ['scripts/walkthrough.verify.test.mjs']
+				: ['src/drills/**/*.test.{ts,tsx}'],
 		testTimeout: 10_000,
+		// Трансформы кладутся на диск: точечная проверка задачи запускается заметно быстрее.
+		fsModuleCache: true,
 		// В стеке нужен только свой код: кадры из vitest и из заглушки todo() лишь мешают читать.
 		onStackTrace: (_error, { file }) =>
 			!file.includes('node_modules') && !file.replace(/\\/g, '/').includes('src/shared/kit'),

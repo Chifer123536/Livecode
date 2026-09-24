@@ -1,10 +1,14 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { barOf, resolveColors } from './theme.mjs'
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 export const DRILLS = path.join(ROOT, 'src', 'drills')
 export const PROGRESS_FILE = path.join(ROOT, '.progress.json')
+export const CURRENT_FILE = path.join(ROOT, '.current.json')
+export const CACHE_DIR = path.join(ROOT, 'node_modules', '.cache', 'drills')
+export const UI_FILE = path.join(ROOT, '.ui.json')
 
 /**
  * Цвет. NO_COLOR выключает, FORCE_COLOR включает принудительно.
@@ -51,17 +55,82 @@ export const rgb =
 		return `${ESC}${basic(r, g, b) + (bg ? 10 : 0)}m${text}${ESC}${reset}m`
 	}
 
-/** Палитра тренажёра: холодный акцент, тёплые статусы. */
+// ── оформление ─────────────────────────────────────────────────────────
+
+/** Настройки внешнего вида. Меняются в меню, лежат в `.ui.json`. */
+export const DEFAULT_UI = { theme: 'midnight', contrast: 'normal', panel: true, bar: 'blocks' }
+
+function readUiFile() {
+	try {
+		const raw = JSON.parse(fs.readFileSync(UI_FILE, 'utf8'))
+		return raw && typeof raw === 'object' ? raw : {}
+	} catch {
+		return {}
+	}
+}
+
+export const ui = { ...DEFAULT_UI, ...readUiFile() }
+
+let colors = resolveColors(ui)
+
+/**
+ * Применить настройки на лету: следующий же вызов палитры возьмёт новые цвета.
+ * Благодаря этому меню перерисовывается в новой теме без перезапуска.
+ */
+export function applyUi(patch = {}) {
+	Object.assign(ui, patch)
+	colors = resolveColors(ui)
+	return ui
+}
+
+export function saveUi() {
+	try {
+		fs.writeFileSync(UI_FILE, JSON.stringify(ui, null, '	'))
+	} catch {
+		/* настройки — удобство, а не состояние */
+	}
+}
+
+/** Активный цвет темы как тройка RGB. */
+export const colorOf = name => colors[name]
+
+/**
+ * Готовая escape-последовательность фона. Нужна меню: подложка экрана рвётся
+ * на каждой плашке, потому что вложенный фон сбрасывается в «по умолчанию»,
+ * а не в цвет панели. Зная код, меню восстанавливает его само.
+ */
+export function bgCode(name) {
+	if (!useColor) return ''
+	const [r, g, b] = colors[name]
+	if (depth === 24) return `${ESC}48;2;${r};${g};${b}m`
+	if (depth === 8) {
+		const level = v => Math.round((Math.max(0, Math.min(255, v)) / 255) * 5)
+		return `${ESC}48;5;${16 + 36 * level(r) + 6 * level(g) + level(b)}m`
+	}
+	return `${ESC}${basic(r, g, b) + 10}m`
+}
+
+export const BG_RESET = useColor ? `${ESC}49m` : ''
+
+/** Токен палитры: цвет берётся в момент печати, а не при импорте. */
+const token = name => (text, options) => rgb(...colors[name])(text, options)
+
+/** Палитра тренажёра. Имена одинаковы во всех темах, значения — из темы. */
 export const palette = {
-	accent: rgb(96, 165, 250),
-	sky: rgb(56, 189, 248),
-	mint: rgb(52, 211, 153),
-	amber: rgb(251, 191, 36),
-	rose: rgb(248, 113, 113),
-	violet: rgb(167, 139, 250),
-	ink: rgb(148, 163, 184),
-	faint: rgb(100, 116, 139),
-	surface: rgb(38, 50, 70),
+	accent: token('accent'),
+	sky: token('sky'),
+	mint: token('mint'),
+	amber: token('amber'),
+	rose: token('rose'),
+	violet: token('violet'),
+	snow: token('snow'),
+	ink: token('ink'),
+	faint: token('faint'),
+	surface: token('surface'),
+	/** Фоновые токены: поверх них печатается snow. */
+	chip: token('chip'),
+	select: token('select'),
+	panel: token('panel'),
 }
 
 export const c = {
@@ -78,7 +147,7 @@ export const c = {
 	gray: palette.faint,
 	ink: palette.ink,
 	/** Подложка выделенной строки. */
-	on: text => palette.surface(text, { bg: true }),
+	on: text => palette.select(text, { bg: true }),
 }
 
 /** Строка без ANSI-последовательностей: нужна и для замера, и для выравнивания. */
@@ -87,6 +156,16 @@ export const strip = s => String(s).replace(/\x1b\[[0-9;]*m/g, '')
 export const visibleWidth = s => strip(s).length
 
 export const padEnd = (s, width) => s + ' '.repeat(Math.max(0, width - visibleWidth(s)))
+
+export const padStart = (s, width) => ' '.repeat(Math.max(0, width - visibleWidth(s))) + s
+
+/** Ширина полезной области вывода: узкие окна не должны рвать таблицы. */
+export const termWidth = () =>
+	Math.max(
+		56,
+		// В консоли меню вывод идёт в трубу: терминала нет, ширину передаёт меню через COLUMNS.
+		Math.min(100, (process.stdout.columns ?? (Number(process.env.COLUMNS) || 90)) - 4),
+	)
 
 /** Первый существующий файл из списка кандидатов. */
 function firstExisting(dir, names) {
@@ -98,12 +177,22 @@ function firstExisting(dir, names) {
 }
 
 /**
+ * Кеш разбора по «путь + время правки». Меню перечитывает паки после каждой команды,
+ * а это под тысячу файлов: без кеша возврат из задачи заметно подвисал.
+ */
+const regionCache = new Map()
+
+/**
  * Разбирает файл на блоки, размеченные `// #region ID | Заголовок | ★☆☆` ... `// #endregion`.
  * Возвращает Map<id, { id, title, stars, body }>.
  */
 export function parseRegions(file) {
 	const result = new Map()
 	if (!file || !fs.existsSync(file)) return result
+
+	const stamp = mtimeOf(file)
+	const cached = regionCache.get(file)
+	if (cached && cached.stamp === stamp) return cached.regions
 
 	const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/)
 	let current = null
@@ -129,6 +218,8 @@ export function parseRegions(file) {
 		}
 		if (current) current.lines.push(line)
 	})
+
+	regionCache.set(file, { stamp, regions: result })
 	return result
 }
 
@@ -188,8 +279,12 @@ export function loadPacks() {
 	)
 }
 
+/** Плоский список всех задач в порядке прохождения. */
+export const allTasks = packs =>
+	packs.flatMap(pack => [...pack.tasks.values()].map(task => ({ pack, task })))
+
 export function findTask(packs, id) {
-	const wanted = id.toUpperCase()
+	const wanted = String(id).toUpperCase()
 	for (const pack of packs) {
 		if (pack.tasks.has(wanted)) return { pack, task: pack.tasks.get(wanted) }
 	}
@@ -197,14 +292,36 @@ export function findTask(packs, id) {
 }
 
 export function findPack(packs, code) {
-	const wanted = code.toUpperCase()
+	const wanted = String(code).toUpperCase()
 	return (
 		packs.find(
-			p => p.code.toUpperCase() === wanted || p.name.toLowerCase() === code.toLowerCase(),
+			p => p.code.toUpperCase() === wanted || p.name.toLowerCase() === String(code).toLowerCase(),
 		) ?? null
 	)
 }
 
+/** Файл, в котором лежит задача. */
+export const fileOf = (pack, task) => task.file ?? pack.tasksFile
+
+/** Путь от корня тренажёра, всегда через прямые слэши — так его читают и редактор, и глаз. */
+export const relativePath = file => path.relative(ROOT, file).split(path.sep).join('/')
+
+export const mtimeOf = file => {
+	try {
+		return fs.statSync(file).mtimeMs
+	} catch {
+		return 0
+	}
+}
+
+// ── прогресс ───────────────────────────────────────────────────────────
+
+const BLANK_ENTRY = { status: 'none', passed: 0, total: 0, types: 0, mtime: 0, at: null }
+
+/**
+ * Прогресс с диска. Старый формат (`tasks: { ID: 'pass' }`) тоже читается:
+ * строка разворачивается в запись при обращении через entryOf.
+ */
 export function readProgress() {
 	if (!fs.existsSync(PROGRESS_FILE)) return null
 	try {
@@ -214,32 +331,109 @@ export function readProgress() {
 	}
 }
 
+export function writeProgress(progress) {
+	try {
+		fs.writeFileSync(PROGRESS_FILE, JSON.stringify(progress, null, '\t'))
+	} catch {
+		/* прогресс — кеш, его потеря не критична */
+	}
+}
+
+/** Запись о задаче в едином виде, независимо от версии файла прогресса. */
+export function entryOf(progress, id) {
+	const raw = progress?.tasks?.[id]
+	if (!raw) return null
+	if (typeof raw === 'string') return { ...BLANK_ENTRY, status: raw }
+	return { ...BLANK_ENTRY, ...raw }
+}
+
+/** 'pass' | 'partial' | 'fail' | null — null означает «не проверялась». */
+export const statusOf = (progress, id) => entryOf(progress, id)?.status ?? null
+
+/**
+ * Проверка устарела, если файл задачи правился после неё.
+ * У старого формата отметки времени нет — такая запись считается свежей,
+ * иначе после обновления тренажёра всё разом покраснело бы.
+ */
+export function isTaskStale(progress, id, file) {
+	const entry = entryOf(progress, id)
+	if (!entry?.mtime) return false
+	return mtimeOf(file) > entry.mtime + 1
+}
+
+/** Задачи, которые правились после последней проверки. */
+export function staleTasks(packs, progress = readProgress()) {
+	if (!progress) return []
+	return allTasks(packs).filter(({ pack, task }) =>
+		isTaskStale(progress, task.id, fileOf(pack, task)),
+	)
+}
+
+/** Первая несданная задача в порядке «от простого к сложному». */
+export function firstUnsolved(packs, progress = readProgress()) {
+	return allTasks(packs).find(({ task }) => statusOf(progress, task.id) !== 'pass') ?? null
+}
+
+/** Счётчик сданного по паку — из кеша прогресса, без прогона тестов. */
+export function packScore(pack, progress) {
+	const total = pack.tasks.size
+	const done = [...pack.tasks.keys()].filter(id => statusOf(progress, id) === 'pass').length
+	return { done, total }
+}
+
+// ── текущая задача ─────────────────────────────────────────────────────
+
+/** Задача, открытая последней. На неё по умолчанию смотрят `yarn ok` и `yarn watch`. */
+export function readCurrent() {
+	try {
+		const raw = JSON.parse(fs.readFileSync(CURRENT_FILE, 'utf8'))
+		return typeof raw?.id === 'string' ? raw.id : null
+	} catch {
+		return null
+	}
+}
+
+export function writeCurrent(id) {
+	try {
+		fs.writeFileSync(CURRENT_FILE, JSON.stringify({ id, at: new Date().toISOString() }, null, '\t'))
+	} catch {
+		/* указатель — удобство, а не состояние */
+	}
+}
+
+// ── индикаторы ─────────────────────────────────────────────────────────
+
 /**
  * Полоска прогресса с градиентом: от розового к мятному по мере заполнения.
  * Последний символ — дробный, поэтому движение видно и на одной решённой задаче.
  */
 export function bar(done, total, width = 24) {
-	if (total === 0) return palette.surface('─'.repeat(width))
+	const glyphs = barOf(ui.bar)
+	if (total === 0) return palette.surface(glyphs.empty.repeat(width))
 
 	const ratio = Math.max(0, Math.min(1, done / total))
 	const exact = ratio * width
 	const full = Math.floor(exact)
 	const remainder = exact - full
 
-	// Градиент по позиции: начало полосы холоднее, конец — цвет завершения.
+	// Градиент по позиции: начало полосы цвета акцента, конец — цвет завершения.
 	const mix = (from, to, t) => Math.round(from + (to - from) * t)
-	const head = [244, 114, 182]
-	const tail = done === total ? [52, 211, 153] : [96, 165, 250]
+	const head = colors.violet
+	const tail = done === total ? colors.mint : colors.accent
 
 	let out = ''
 	for (let index = 0; index < full; index += 1) {
 		const t = width === 1 ? 1 : index / (width - 1)
-		out += rgb(mix(head[0], tail[0], t), mix(head[1], tail[1], t), mix(head[2], tail[2], t))('█')
+		out += rgb(
+			mix(head[0], tail[0], t),
+			mix(head[1], tail[1], t),
+			mix(head[2], tail[2], t),
+		)(glyphs.full)
 	}
 
 	let rest = width - full
 	if (remainder > 0.15 && rest > 0) {
-		const partial = remainder > 0.6 ? '▓' : remainder > 0.35 ? '▒' : '░'
+		const partial = glyphs.parts[remainder > 0.6 ? 2 : remainder > 0.35 ? 1 : 0]
 		const t = width === 1 ? 1 : full / (width - 1)
 		out += rgb(
 			mix(head[0], tail[0], t),
@@ -249,7 +443,7 @@ export function bar(done, total, width = 24) {
 		rest -= 1
 	}
 
-	return out + palette.surface('░'.repeat(Math.max(0, rest)))
+	return out + palette.surface(glyphs.empty.repeat(Math.max(0, rest)))
 }
 
 /** Процент в компактном виде: 0%, 7%, 100%. */

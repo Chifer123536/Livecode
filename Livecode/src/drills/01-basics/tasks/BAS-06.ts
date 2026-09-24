@@ -7,6 +7,6 @@
  *   average([])           → 0
  */
 export const average = (nums: number[]): number => {
-	return nums.length === 0 ? 0 : nums.reduce((acc, n) => acc + n, 0) / nums.length
+	return nums.length === 0 ? 0 : nums.reduce((acc, val) => acc + val, 0) / nums.length
 }
 // #endregion

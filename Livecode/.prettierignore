@@ -1,0 +1,9 @@
+node_modules
+dist
+stubs.json
+PROGRESS.md
+.progress.json
+.current.json
+.vitest-report.json
+.ui.json
+src/drills/*/walkthrough.md

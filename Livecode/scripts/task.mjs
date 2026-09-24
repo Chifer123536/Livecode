@@ -8,11 +8,23 @@
  *   yarn task BAS-07 -c       карточка + копия в буфер обмена
  *   yarn task BAS-07 -s       карточка вместе с эталонным решением
  *   yarn task ARR --all       весь пак одной карточкой
- *   yarn task next            первая нерешённая задача (после `yarn progress`)
+ *   yarn task next            первая нерешённая задача
  */
 import { spawn } from 'node:child_process'
-import { bar, c, findPack, findTask, loadPacks, padEnd, palette, readProgress } from './lib.mjs'
-import { columns, ellipsis, end, key, line, mark, node, stars, top } from './ui.mjs'
+import {
+	bar,
+	c,
+	findPack,
+	findTask,
+	firstUnsolved,
+	loadPacks,
+	packScore,
+	padEnd,
+	palette,
+	readProgress,
+	statusOf,
+} from './lib.mjs'
+import { cell, columns, end, hint, line, mark, node, starsCell, top, wrapText } from './ui.mjs'
 
 const PROMPT = `Ты — сильный фронтенд-наставник. Я готовлюсь к лайвкоду на позицию junior frontend (React + TypeScript).
 Разбери задачу ниже строго по шагам и НЕ давай код раньше шага 4:
@@ -74,10 +86,8 @@ function copyToClipboard(text) {
 	const args = process.platform === 'linux' ? ['-selection', 'clipboard'] : []
 	return new Promise(resolve => {
 		try {
-			const child = spawn(command, args, {
-				stdio: ['pipe', 'ignore', 'ignore'],
-				shell: process.platform === 'win32',
-			})
+			// Без shell: clip, pbcopy и xclip — обычные исполняемые файлы.
+			const child = spawn(command, args, { stdio: ['pipe', 'ignore', 'ignore'] })
 			child.on('error', () => resolve(false))
 			child.on('close', code => resolve(code === 0))
 			child.stdin.end(text)
@@ -103,19 +113,20 @@ function listPacks(packs) {
 			out.push(line(palette.surface(`уровень ${currentLevel}`)))
 		}
 
-		const count = pack.tasks.size
+		const { done, total: count } = packScore(pack, progress)
 		totalTasks += count
-		const done = progress?.packs?.[pack.code]?.done ?? 0
 		totalDone += done
 
 		out.push(
 			line(
 				palette.accent(padEnd(pack.code, 6)) +
-					palette.ink(padEnd(ellipsis(pack.title, 22), 23)) +
-					palette.surface(padEnd(ellipsis(pack.subtitle, 27), 29)) +
-					(progress
-						? bar(done, count, 10) + ' ' + palette.faint(`${done}/${count}`)
-						: palette.surface(`${count} зад. · ~${pack.norm} мин`)),
+					palette.ink(cell(pack.title, 23)) +
+					palette.surface(cell(pack.subtitle, 28)) +
+					' ' +
+					bar(done, count, 10) +
+					' ' +
+					palette.faint(padEnd(`${done}/${count}`, 7)) +
+					palette.surface(`~${pack.norm} мин`),
 			),
 		)
 	}
@@ -124,17 +135,18 @@ function listPacks(packs) {
 	out.push(
 		node(
 			`Всего ${c.bold(palette.ink(String(totalTasks)))} задач в ${packs.length} паках` +
-				(progress ? palette.mint(`  ·  решено ${totalDone}`) : ''),
+				palette.mint(`  ·  решено ${totalDone}`),
 		),
 	)
 	out.push(line())
 	out.push(
 		...columns([
 			['yarn menu', 'интерактивное меню'],
-			['yarn solve', 'первая нерешённая задача'],
+			['yarn go', 'открыть следующую нерешённую'],
+			['yarn ok', 'проверить текущую задачу'],
 			['yarn task ARR', 'список задач пака'],
 			['yarn task BAS-07 -c', 'карточка задачи в буфер'],
-			['yarn progress', 'где ты сейчас'],
+			['yarn progress', 'полный прогон и таблица'],
 		]),
 	)
 	out.push(end(palette.surface('коды паков слева — их можно передавать любой команде')))
@@ -156,11 +168,10 @@ function listPack(pack) {
 	for (const task of pack.tasks.values()) {
 		out.push(
 			line(
-				mark(progress?.tasks?.[task.id]) +
+				mark(statusOf(progress, task.id)) +
 					'  ' +
 					palette.accent(padEnd(task.id, 10)) +
-					stars(task.stars) +
-					padEnd('', 5 - (task.stars?.length ?? 0)) +
+					starsCell(task.stars) +
 					palette.ink(task.title),
 			),
 		)
@@ -169,28 +180,15 @@ function listPack(pack) {
 	out.push(line())
 	out.push(line(palette.surface(`норматив ~${pack.norm} мин · src/drills/${pack.name}/tasks/`)))
 	out.push(
-		end(key(`yarn solve ${pack.code}`) + palette.faint('  открыть первую нерешённую в паке')),
+		end(
+			hint(`yarn go ${pack.code}`, 'открыть первую нерешённую') +
+				palette.surface('   ·   ') +
+				hint(`yarn ok ${pack.code}`, 'проверить весь пак'),
+		),
 	)
 	out.push('')
 
 	console.log(out.join('\n'))
-}
-
-/** Перенос длинного текста по словам — чтобы «почему» не уезжало за край. */
-function wrapText(text, width) {
-	const words = String(text).split(/\s+/)
-	const rows = []
-	let current = ''
-	for (const word of words) {
-		if ((current + ' ' + word).trim().length > width) {
-			if (current) rows.push(current.trim())
-			current = word
-		} else {
-			current += ' ' + word
-		}
-	}
-	if (current.trim()) rows.push(current.trim())
-	return rows
 }
 
 async function main() {
@@ -209,21 +207,12 @@ async function main() {
 	let query = args[0]
 
 	if (query.toLowerCase() === 'next') {
-		const progress = readProgress()
-		if (!progress) {
-			console.log(
-				c.yellow('Сначала запусти `yarn progress` — без него неизвестно, что уже решено.'),
-			)
-			return
-		}
-		const pending = packs
-			.flatMap(p => [...p.tasks.keys()])
-			.find(id => progress.tasks?.[id] !== 'pass')
+		const pending = firstUnsolved(packs, readProgress())
 		if (!pending) {
 			console.log(c.green('Всё решено. Можешь идти на собес.'))
 			return
 		}
-		query = pending
+		query = pending.task.id
 	}
 
 	const withSolution = flags.has('-s') || flags.has('--solution')
@@ -256,7 +245,6 @@ async function main() {
 	}
 
 	console.log(c.red(`Не нашла «${query}». Запусти \`yarn task\` без аргументов — покажу список.`))
-	process.exit(1)
 }
 
 main()

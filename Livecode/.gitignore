@@ -24,6 +24,9 @@ dist-ssr
 *.sw?
 .vitest-report.json
 .progress.json
+.current.json
+.ui.json
+.tsconfig.check-*.json
 
 # Посторонний архив, к тренажёру отношения не имеет
 Vishnyakka.zip

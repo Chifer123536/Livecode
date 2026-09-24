@@ -16,3 +16,6 @@ pnpm-lock.yaml
 # Генерируется командами, форматировать не нужно
 Livecode/stubs.json
 Livecode/PROGRESS.md
+
+# Разборы решений: разметку читает парсер, форматтер её трогать не должен
+Livecode/src/drills/*/walkthrough.md

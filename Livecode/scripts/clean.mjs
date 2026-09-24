@@ -20,7 +20,17 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline/promises'
-import { c, findPack, findTask, loadPacks, padEnd, palette, readProgress, ROOT } from './lib.mjs'
+import {
+	c,
+	findPack,
+	findTask,
+	loadPacks,
+	padEnd,
+	palette,
+	readProgress,
+	ROOT,
+	statusOf,
+} from './lib.mjs'
 import { columns, end, GUTTER, key, line, node, row, top } from './ui.mjs'
 
 const STUBS = path.join(ROOT, 'stubs.json')
@@ -182,8 +192,8 @@ function selectTasks(packs, args, flags, stubs) {
 
 	if (flags.has('--done')) {
 		const base = chosen.length > 0 ? chosen : all
-		chosen = base.filter(({ task }) => progress?.tasks?.[task.id] === 'pass')
-		if (!progress) console.log(c.yellow('  Прогресс не считался — сначала `yarn progress`.'))
+		chosen = base.filter(({ task }) => statusOf(progress, task.id) === 'pass')
+		if (!progress) console.log(c.yellow('  Прогресс не считался — сначала `yarn ok --all`.'))
 	}
 
 	// Сбрасывать нетронутое бессмысленно: файл и так совпадает с заготовкой.
@@ -203,7 +213,7 @@ function overview(packs, stubs) {
 		)
 		if (dirty.length === 0) continue
 		total += dirty.length
-		const done = dirty.filter(task => progress?.tasks?.[task.id] === 'pass').length
+		const done = dirty.filter(task => statusOf(progress, task.id) === 'pass').length
 		out.push(
 			line(
 				palette.accent(padEnd(pack.code, 6)) +
@@ -337,7 +347,7 @@ async function main() {
 	}
 
 	console.log(line(palette.mint('✓ ') + palette.ink(`сброшено: ${restored}`)))
-	console.log(end(palette.surface('прогресс устарел — yarn solve пересчитает сам')))
+	console.log(end(palette.surface('прогресс по этим задачам устарел — `yarn ok` пересчитает')))
 	console.log()
 }
 
